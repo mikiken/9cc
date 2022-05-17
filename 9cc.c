@@ -21,6 +21,9 @@ struct Token {
   char *str;      // トークン文字列
 };
 
+// 入力プログラム
+char *user_input;
+
 // 現在着目しているトークン
 Token *token;
 
@@ -34,6 +37,18 @@ void error(char *fmt, ...) {
   exit(1);
 }
 
+void error_at(char *loc, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - user_input; // エラー発生箇所が何文字目か計算
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, " "); // pos個の空白を出力
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char op) {
@@ -47,7 +62,7 @@ bool consume(char op) {
 // それ以外の場合にはエラーを報告する。
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op)
-    error("'%c'ではありません", op);
+    error_at(token->str, "'%c'ではありません", op);
   token = token->next;
 }
 
@@ -55,7 +70,7 @@ void expect(char op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
   if (token->kind != TK_NUM)
-    error("数ではありません");
+    error_at(token->str, "数ではありません");
   int val = token->val;
   token = token->next;
   return val;
@@ -65,7 +80,7 @@ bool at_eof() {
   return token->kind == TK_EOF;
 }
 
-// 新しいトークnを作成してcurに繋げる
+// 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str) {
   Token *tok = calloc(1,sizeof(Token)); // calloc: メモリ領域を確保し、0埋め (要素数, 1要素あたりのサイズ)
   tok->kind = kind;
@@ -75,7 +90,8 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
 }
 
 // 入力文字列pをトークナイズしてそれを返す
-Token *tokenize(char *p) {
+Token *tokenize() {
+  char *p = user_input;
   Token head;
   head.next = NULL;
   Token *cur = &head;
@@ -98,21 +114,22 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    error("トークナイズできません");
+    error_at(p, "解釈できない文字です");
   }
 
   new_token(TK_EOF, cur, p);
-  return head.next;
+  return head.next; // headはダミーノードなので、その次のノードを返す
 }
 
 int main(int argc, char **argv) {
   if (argc != 2) {
-    error("引数の個数が正しくありません");
+    error("%s: 引数の個数が正しくありません", argv[0]);
     return 1;
   }
 
+  user_input = argv[1];
   // トークナイズする
-  token = tokenize(argv[1]); //実装は後回し
+  token = tokenize();
 
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
