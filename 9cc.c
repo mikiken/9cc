@@ -163,6 +163,7 @@ Node *new_num(int val) {
 
 Node *expr(void);
 Node *mul(void);
+Node *unary(void);
 Node *primary(void);
 
 Node *expr() {
@@ -179,16 +180,24 @@ Node *expr() {
 }
 
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
 
   while (true) {
     if (consume('*'))
-      node = new_binary(ND_MUL, node, primary());
+      node = new_binary(ND_MUL, node, unary());
     else if (consume('/'))
-      node = new_binary(ND_DIV, node, primary());
+      node = new_binary(ND_DIV, node, unary());
     else
       return node; // 数値のみの場合
   }
+}
+
+Node *unary() {
+  if (consume('+'))
+    return primary();
+  if (consume('-'))
+    return new_binary(ND_SUB, new_num(0), primary());
+  return primary();
 }
 
 Node *primary() {
@@ -198,7 +207,6 @@ Node *primary() {
     expect(')');
     return node;
   }
-
   // そうでなければ数値のはず
   return new_num(expect_number());
 }
