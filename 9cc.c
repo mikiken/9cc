@@ -83,7 +83,7 @@ bool at_eof() {
 
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str) {
-  Token *tok = calloc(1,sizeof(Token)); // calloc: メモリ領域を確保し、0埋め (要素数, 1要素あたりのサイズ)
+  Token *tok = calloc(1, sizeof(Token)); // calloc: メモリ領域を確保し、0埋め (要素数, 1要素あたりのサイズ)
   tok->kind = kind;
   tok->str = str;
   cur->next = tok;
@@ -194,9 +194,9 @@ Node *mul() {
 
 Node *unary() {
   if (consume('+'))
-    return primary();
+    return new_binary(ND_ADD, new_num(0), unary());
   if (consume('-'))
-    return new_binary(ND_SUB, new_num(0), primary());
+    return new_binary(ND_SUB, new_num(0), unary());
   return primary();
 }
 

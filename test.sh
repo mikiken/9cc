@@ -27,6 +27,8 @@ assert 4 '(3+5)/2'
 assert 10 '-10+20'
 assert 10 '+(+10)'
 assert 10 '-(-10)'
+assert 10 '+ +10'
+assert 10 '- -10'
 assert 10 '(-(-15 + 25) + 50) / 4'
 
 echo OK
