@@ -13,7 +13,6 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
   return node;
 }
 
-
 Node *new_num(int val) {
   Node *node = new_node(ND_NUM);
   node->val = val;
@@ -48,7 +47,16 @@ int expect_number() {
   return val;
 }
 
-//Node *expr();
+bool at_eof() {
+  return token->kind == TK_EOF;
+}
+
+Node *code[100];
+
+//void program();
+Node *stmt();
+Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -56,8 +64,31 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+void program() {
+  int i = 0;
+  while (!at_eof()) {
+    code[i] = stmt();
+    i++;
+  }
+  code[i] = NULL;
+}
+
+Node *stmt() {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
+
+
 Node *expr() {
-  return equality();
+  return assign();
+}
+
+Node *assign() {
+  Node *node = equality();
+  if (consume("="))
+    node = new_binary(ND_ASSIGN, node, assign());
+  return node;
 }
 
 Node *equality() {
@@ -131,6 +162,13 @@ Node *primary() {
     expect(")");
     return node;
   }
-  // そうでなければ数値のはず
-  return new_num(expect_number());
+  else if (token->kind == TK_IDENT) { // ローカル変数の場合
+    Node *node = new_node(ND_LVAR);
+    node->name = token->str[0];
+    node->offset = (token->str[0] - 'a' + 1) * 8;
+    token = token->next;
+    return node;
+  }
+  else
+    return new_num(expect_number()); // それ以外は整数のはず
 }
