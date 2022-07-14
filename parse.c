@@ -23,7 +23,7 @@ Node *new_num(int val) {
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
   // (tokenが記号でない場合) || (指定されたopの長さがtokenの長さと等しくない場合) || (指定されたopとtokenが等しくない場合)
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
+  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->start, op, token->len))
     return false;
   token = token->next;
   return true;
@@ -32,8 +32,8 @@ bool consume(char *op) {
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
-    error_at(token->str, "'%s'ではありません", op);
+  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->start, op, token->len))
+    error_at(token->start, "'%s'ではありません", op);
   token = token->next;
 }
 
@@ -41,11 +41,20 @@ void expect(char *op) {
 // それ以外の場合にはエラーを報告する。
 int expect_number() {
   if (token->kind != TK_NUM)
-    error_at(token->str, "数ではありません");
+    error_at(token->start, "数ではありません");
   int val = token->val;
   token = token->next;
   return val;
 }
+
+#if 0
+  Lvar *find_lvar() {
+    for (Lvar *var = locals; var; var = var->next)
+      if (var->len == token->len && !memcmp(token->start, var->name, var->len))
+        return var;
+    return NULL;
+  }
+#endif
 
 bool at_eof() {
   return token->kind == TK_EOF;
@@ -162,13 +171,35 @@ Node *primary() {
     expect(")");
     return node;
   }
-  else if (token->kind == TK_IDENT) { // ローカル変数の場合
+  #if 1
+    else if (token->kind == TK_IDENT) { // ローカル変数の場合
+      Node *node = new_node(ND_LVAR);
+      node->offset = (*(token->start) - 'a' + 1) * 8;
+      token = token->next;
+      return node;
+    }
+  #else
+    else if (token->kind == TK_IDENT) { // ローカル変数の場合
     Node *node = new_node(ND_LVAR);
-    node->name = token->str[0];
-    node->offset = (token->str[0] - 'a' + 1) * 8;
-    token = token->next;
+
+    Lvar *lvar = find_lvar();
+    if (lvar) {
+      node->offset = lvar->offset;
+      token = token->next;
+    } else { // 初登場のローカル変数の場合、localsの先頭に追加する
+      lvar = calloc(1, sizeof(Lvar));
+      lvar->next = locals;
+      lvar->name = token->str;
+      lvar->len = token->len;
+      lvar->offset = locals->offset + 8; // 関数呼び出し未実装のため、とりあえずこれでOK
+      locals = lvar;
+
+      node->offset = lvar->offset;
+      token = token->next;
+    }
     return node;
   }
+  #endif
   else
     return new_num(expect_number()); // それ以外は整数のはず
 }

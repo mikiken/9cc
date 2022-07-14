@@ -19,9 +19,22 @@ struct Token {
   TokenKind kind; // トークンの型
   Token *next;    // 次の入力トークン
   int val;        // kindがTK_NUMの場合、その数値
-  char *str;      // トークン文字列
+  char *start;    // トークン文字列の開始位置
+  char *end;      // トークン文字列の終了位置
   int len;        // トークンの長さ
 };
+
+typedef struct Lvar Lvar;
+
+struct Lvar {
+  Lvar *next; // 次の変数またはNULL
+  char *name; // 変数の名前
+  int len;    // 名前の文字数
+  int offset; // RBPからのオフセット
+};
+
+// ローカル変数のリスト
+Lvar *locals;
 
 // 入力プログラム
 extern char *user_input;
@@ -60,7 +73,6 @@ struct Node {
   Node *lhs;     // 左辺(left-hand side)
   Node *rhs;     // 右辺(right-hand side)
   int val;       // kindがND_NUMの場合のみ使う
-  char name;     // kindがND_LVARの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
 };
 
