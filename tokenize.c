@@ -37,7 +37,7 @@ bool is_ident(char c) {
 
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *start, char*end) {
-  Token *tok = calloc(1, sizeof(Token)); // calloc: メモリ領域を確保し、0埋め (要素数, 1要素あたりのサイズ)
+  Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->start = start;
   tok->end = end;
@@ -72,7 +72,7 @@ Token *tokenize() {
       continue;
     }
 
-    #if 1
+    #if 0
       if ('a' <= *p && *p <= 'z') {
         cur = new_token(TK_IDENT, cur, p, p);
         p++;
@@ -80,18 +80,19 @@ Token *tokenize() {
       }
     #else
       if (is_ident_first(*p)) {
-        char *q = p;
+        char *start = p;
         do {
-          q++;
-        } while (is_ident(*q));
-        cur = new_token(TK_IDENT, cur, , 0);
+          p++;
+        } while (is_ident(*p));
+        cur = new_token(TK_IDENT, cur, start, --p);
+        p++;
         continue;
       }
     #endif
     
 
     if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p, p+1); // この段階では数字が何文字か分からにので0としておく
+      cur = new_token(TK_NUM, cur, p, p+1);
       char *q = p; // 読み込み開始位置を記録
       cur->val = strtol(p, &p, 10);
       cur->len = p - q; // 読み込み前後の位置の差から、文字数を計算
@@ -103,6 +104,6 @@ Token *tokenize() {
 
   cur = new_token(TK_EOF, cur, p, p);
   cur->len = 0;
-  
+
   return head.next; // headはダミーノードなので、その次のノードを返す
 }
