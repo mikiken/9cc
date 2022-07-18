@@ -54,6 +54,13 @@ Lvar *find_lvar() {
   return NULL;
 }
 
+void *init_locals() {
+  Lvar head;
+  head.offset = 0;
+  head.next = NULL;
+  locals = &head;
+}
+
 bool at_eof() {
   return token->kind == TK_EOF;
 }
@@ -169,33 +176,25 @@ Node *primary() {
     expect(")");
     return node;
   }
-  #if 0
-    else if (token->kind == TK_IDENT) { // ローカル変数の場合
-      Node *node = new_node(ND_LVAR);
-      node->offset = (*(token->start) - 'a' + 1) * 8;
-      token = token->next;
-      return node;
-    }
-  #else
-    else if (token->kind == TK_IDENT) { // ローカル変数の場合
-      Node *node = new_node(ND_LVAR);
-      Lvar *lvar = find_lvar();
+  else if (token->kind == TK_IDENT) { // ローカル変数の場合
+    Node *node = new_node(ND_LVAR);
+    Lvar *lvar = find_lvar();
+    
+    if (lvar != NULL) {
+      node->offset = lvar->offset;
+    } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
+      lvar = calloc(1, sizeof(Lvar));
+      lvar->len = token->len;
+      lvar->offset = locals->offset + 8;
+      lvar->name = token->start;
+      lvar->next = locals;
+      locals = lvar;
       
-      if (lvar != NULL) {
-        node->offset = lvar->offset;
-      } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
-        lvar = calloc(1, sizeof(Lvar));
-        lvar->next = locals;
-        lvar->len = token->len;
-        lvar->offset = locals->offset + 8;
-        //lvar->name = token->start;
-        memcpy(lvar->name, token->start, token->len);
-        node->offset = lvar->offset;
-      }
-      token = token->next;
-      return node;
+      node->offset = lvar->offset;
     }
-  #endif
+    token = token->next;
+    return node;
+  }
   else
     return new_num(expect_number()); // それ以外は整数のはず
 }

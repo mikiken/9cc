@@ -72,24 +72,15 @@ Token *tokenize() {
       continue;
     }
 
-    #if 0
-      if ('a' <= *p && *p <= 'z') {
-        cur = new_token(TK_IDENT, cur, p, p);
+    if (is_ident_first(*p)) {
+      char *start = p;
+      do {
         p++;
-        continue;
-      }
-    #else
-      if (is_ident_first(*p)) {
-        char *start = p;
-        do {
-          p++;
-        } while (is_ident(*p));
-        cur = new_token(TK_IDENT, cur, start, --p);
-        p++;
-        continue;
-      }
-    #endif
-    
+      } while (is_ident(*p));
+      cur = new_token(TK_IDENT, cur, start, --p);
+      p++;
+      continue;
+    }
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, p+1);

@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  init_locals();
   user_input = argv[1];
   // トークナイズする
   token = tokenize();
@@ -21,10 +22,9 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   // プロローグ
-  // 変数26個分の領域を確保する
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  printf("  sub rsp, %d\n", locals->offset);
 
   // 先頭の式から順にコード生成
   for (int i = 0; code[i]; i++) {

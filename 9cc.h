@@ -36,6 +36,8 @@ struct Lvar {
 // ローカル変数のリスト
 Lvar *locals;
 
+void *init_locals();
+
 // 入力プログラム
 extern char *user_input;
 

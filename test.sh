@@ -57,4 +57,9 @@ assert 2 'a=2; a;'
 assert 6 'x=4; y=2; x+y;'
 assert 9 'p=q=3; r=2; p+q*r;'
 
+assert 5 'foo=5; foo;'
+assert 8 'bar=2; bar*3+2;'
+assert 6 '_foo123=4; bar=2; _foo123+bar;'
+assert 4 'Foo_123_bar=3; (-Foo_123_bar+5)*2;'
+
 echo OK
