@@ -83,10 +83,11 @@ Token *tokenize() {
     }
 
     if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p, p+1);
-      char *q = p; // 読み込み開始位置を記録
-      cur->val = strtol(p, &p, 10);
-      cur->len = p - q; // 読み込み前後の位置の差から、文字数を計算
+      char *start = p; // 読み込み開始位置を記録
+      int value = strtol(p, &p, 10);
+      cur = new_token(TK_NUM, cur, start, --p);
+      p++;
+      cur->val = value;
       continue;
     }
 
