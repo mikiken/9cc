@@ -72,6 +72,12 @@ Token *tokenize() {
       continue;
     }
 
+    if (strncmp(p, "return", 6) == 0 && !is_ident(*(p+6))) {
+      cur = new_token(TK_RETURN, cur, p, p+5);
+      p += 6;
+      continue;
+    }
+
     if (is_ident_first(*p)) {
       char *start = p;
       do {

@@ -21,9 +21,9 @@ Node *new_num(int val) {
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
-bool consume(char *op) {
+bool consume(TokenKind kind, char *op) {
   // (tokenが記号でない場合) || (指定されたopの長さがtokenの長さと等しくない場合) || (指定されたopとtokenが等しくない場合)
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->start, op, token->len))
+  if (token->kind != kind || strlen(op) != token->len || memcmp(token->start, op, token->len))
     return false;
   token = token->next;
   return true;
@@ -88,9 +88,24 @@ void program() {
 }
 
 Node *stmt() {
-  Node *node = expr();
-  expect(";");
-  return node;
+  #if 0
+    Node *node = expr();
+    expect(";");
+    return node;
+  #else
+    Node *node;
+    
+    if (consume(TK_RETURN, "return")) {
+      node = new_node(ND_RETURN);
+      node->lhs = expr();
+    } else {
+      node = expr();
+    }
+
+    if (!consume(TK_RESERVED, ";"))
+      error_at(token->start, "';'ではないトークンです");
+    return node;
+  #endif
 }
 
 
@@ -100,7 +115,7 @@ Node *expr() {
 
 Node *assign() {
   Node *node = equality();
-  if (consume("="))
+  if (consume(TK_RESERVED, "="))
     node = new_binary(ND_ASSIGN, node, assign());
   return node;
 }
@@ -109,9 +124,9 @@ Node *equality() {
   Node *node = relational();
 
   while (true) {
-    if (consume("=="))
+    if (consume(TK_RESERVED, "=="))
       node = new_binary(ND_EQ, node, relational());
-    else if (consume("!="))
+    else if (consume(TK_RESERVED, "!="))
       node = new_binary(ND_NE, node, relational());
     else
       return node;
@@ -122,13 +137,13 @@ Node *relational() {
   Node *node = add();
 
   while (true) {
-    if (consume("<"))
+    if (consume(TK_RESERVED, "<"))
       node = new_binary(ND_LT, node, add());
-    else if (consume("<="))
+    else if (consume(TK_RESERVED, "<="))
       node = new_binary(ND_LE, node, add());
-    else if (consume(">"))
+    else if (consume(TK_RESERVED, ">"))
       node = new_binary(ND_LT, add(), node);
-    else if (consume(">="))
+    else if (consume(TK_RESERVED, ">="))
       node = new_binary(ND_LE, add(), node);
     else
       return node;
@@ -139,9 +154,9 @@ Node *add() {
   Node *node = mul();
 
   while (true) {
-    if (consume("+"))
+    if (consume(TK_RESERVED, "+"))
       node = new_binary(ND_ADD, node, mul());
-    else if (consume("-"))
+    else if (consume(TK_RESERVED, "-"))
       node = new_binary(ND_SUB, node, mul());
     else
       return node; // 数値のみの場合
@@ -152,9 +167,9 @@ Node *mul() {
   Node *node = unary();
 
   while (true) {
-    if (consume("*"))
+    if (consume(TK_RESERVED, "*"))
       node = new_binary(ND_MUL, node, unary());
-    else if (consume("/"))
+    else if (consume(TK_RESERVED, "/"))
       node = new_binary(ND_DIV, node, unary());
     else
       return node; // 数値のみの場合
@@ -162,16 +177,16 @@ Node *mul() {
 }
 
 Node *unary() {
-  if (consume("+"))
+  if (consume(TK_RESERVED, "+"))
     return new_binary(ND_ADD, new_num(0), unary());
-  if (consume("-"))
+  if (consume(TK_RESERVED, "-"))
     return new_binary(ND_SUB, new_num(0), unary());
   return primary();
 }
 
 Node *primary() {
   // 次のトークンが"("なら、"(" expr ")"のはず
-  if (consume("(")) {
+  if (consume(TK_RESERVED, "(")) {
     Node *node = expr();
     expect(")");
     return node;

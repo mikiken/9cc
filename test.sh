@@ -62,4 +62,9 @@ assert 8 'bar=2; bar*3+2;'
 assert 6 '_foo123=4; bar=2; _foo123+bar;'
 assert 4 'Foo_123_bar=3; (-Foo_123_bar+5)*2;'
 
+assert 1 'return 1; 2; 3;'
+assert 2 '1; return 2; 3;'
+assert 3 '1; 2; return 3;'
+assert 3 '1; 2; return 3; return 4;'
+assert 5 'return123 = 3; return return123 + 2;'
 echo OK
