@@ -84,6 +84,12 @@ Token *tokenize() {
       continue;
     }
 
+    if (strncmp(p, "while", 5) == 0 && !is_ident(*(p+5))) {
+      cur = new_token(TK_WHILE, cur, p, p+4);
+      p += 5;
+      continue;
+    }
+
     if (strncmp(p, "return", 6) == 0 && !is_ident(*(p+6))) {
       cur = new_token(TK_RETURN, cur, p, p+5);
       p += 6;

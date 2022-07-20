@@ -104,6 +104,14 @@ Node *stmt() {
     node->lhs = expr();
     expect(";");
   }
+
+  else if (consume(TK_WHILE, "while")) {
+    node = new_node(ND_WHILE);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+  }
   
   else {
     node = expr();

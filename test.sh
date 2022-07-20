@@ -79,4 +79,7 @@ assert 4 'if(0) 3; else 2; 4;'
 assert 4 'a=2*3; if(a<5) return 3; else if(a==6) return 4;'
 assert 2 'a=2*3; if(a<5) return 3; else if(a==7) return 4; return 2;'
 
+assert 2 'while(0) return 1; return 2;'
+assert 5 'x=0; while(x<5) x=x+1; return x;'
+
 echo OK
