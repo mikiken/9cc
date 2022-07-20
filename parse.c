@@ -88,24 +88,31 @@ void program() {
 }
 
 Node *stmt() {
-  #if 0
-    Node *node = expr();
-    expect(";");
-    return node;
-  #else
-    Node *node;
-    
-    if (consume(TK_RETURN, "return")) {
-      node = new_node(ND_RETURN);
-      node->lhs = expr();
-    } else {
-      node = expr();
-    }
+  Node *node;
+  if (consume(TK_IF, "if")) {
+    node = new_node(ND_IF);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    #if 0
+      if (consume(TK_ELSE, "else"))
+        node->els = stmt();
+    #endif
+  }
 
-    if (!consume(TK_RESERVED, ";"))
-      error_at(token->start, "';'ではないトークンです");
-    return node;
-  #endif
+  else if (consume(TK_RETURN, "return")) {
+    node = new_node(ND_RETURN);
+    node->lhs = expr();
+    expect(";");
+  }
+  
+  else {
+    node = expr();
+    expect(";");
+  }
+  
+  return node;
 }
 
 

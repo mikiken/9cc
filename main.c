@@ -9,6 +9,8 @@ int main(int argc, char **argv) {
   }
 
   init_locals();
+  label_count = 0;
+  
   user_input = argv[1];
   // トークナイズする
   token = tokenize();
