@@ -13,7 +13,7 @@ typedef enum {
   TK_EOF,      // 入力の終わりを表すトークン
   TK_RETURN,   // return
   TK_IF,       // if
-  //TK_ELSE,     // else
+  TK_ELSE,     // else
 } TokenKind;
 
 typedef struct Token Token;
@@ -85,7 +85,7 @@ struct Node {
   // if (cond) then; els...
   Node *cond;
   Node *then;
-  //Node *els;
+  Node *els;
 };
 
 extern Node *code[100];

@@ -78,13 +78,11 @@ Token *tokenize() {
       continue;
     }
 
-    #if 0
-      if (strncmp(p, "else", 4) == 0 && !is_ident(*(p+4))) {
-        cur = new_token(TK_ELSE, cur, p, p+3);
-        p += 4;
-        continue;
-      }
-    #endif
+    if (strncmp(p, "else", 4) == 0 && !is_ident(*(p+4))) {
+      cur = new_token(TK_ELSE, cur, p, p+3);
+      p += 4;
+      continue;
+    }
 
     if (strncmp(p, "return", 6) == 0 && !is_ident(*(p+6))) {
       cur = new_token(TK_RETURN, cur, p, p+5);

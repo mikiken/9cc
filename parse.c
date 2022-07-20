@@ -95,10 +95,8 @@ Node *stmt() {
     node->cond = expr();
     expect(")");
     node->then = stmt();
-    #if 0
-      if (consume(TK_ELSE, "else"))
-        node->els = stmt();
-    #endif
+    if (consume(TK_ELSE, "else"))
+      node->els = stmt();
   }
 
   else if (consume(TK_RETURN, "return")) {

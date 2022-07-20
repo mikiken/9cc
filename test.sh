@@ -68,9 +68,15 @@ assert 3 '1; 2; return 3;'
 assert 3 '1; 2; return 3; return 4;'
 assert 5 'return123 = 3; return return123 + 2;'
 
+assert 5 'if(0) 3; 5;'
 assert 8 'if (1) 8;'
-assert 2  'if(1) return 2; return 7;'
+assert 2 'if(1) return 2; return 7;'
 assert 6 'if (2+3==5) 3*2;'
-assert 3  'a=-1; if(a>0) return 5; return 3;'
+assert 3 'a=-1; if(a>0) return 5; return 3;'
+assert 2 'if(0) 3; else 2;'
+assert 3 'if(1) 3; else 2;'
+assert 4 'if(0) 3; else 2; 4;'
+assert 4 'a=2*3; if(a<5) return 3; else if(a==6) return 4;'
+assert 2 'a=2*3; if(a<5) return 3; else if(a==7) return 4; return 2;'
 
 echo OK
