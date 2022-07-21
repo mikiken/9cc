@@ -59,17 +59,6 @@ void gen(Node *node) {
       }
       label_count++;
       return;
-    case ND_WHILE:
-      printf(".L.begin%d:\n", label_count);
-      gen(node->cond);
-      printf("  pop rax\n");
-      printf("  cmp rax, 0\n");
-      printf("  je  .L.end%d\n", label_count);
-      gen(node->then);
-      printf("  jmp .L.begin%d\n", label_count);
-      printf(".L.end%d:\n", label_count);
-      label_count++;
-      return;
     case ND_FOR:
       if (node->init)
         gen(node->init);

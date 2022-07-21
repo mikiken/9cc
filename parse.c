@@ -106,7 +106,7 @@ Node *stmt() {
   }
 
   else if (consume(TK_WHILE, "while")) {
-    node = new_node(ND_WHILE);
+    node = new_node(ND_FOR);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -116,15 +116,12 @@ Node *stmt() {
   else if (consume(TK_FOR, "for")) {
     node = new_node(ND_FOR);
     expect("(");
-    //printf("# *(token->start): '%c'\n", *(token->start));
     if (*(token->start) != ';')
       node->init = expr();
     expect(";");
-    //printf("# *(token->start): '%c'\n", *(token->start));
     if (*(token->start) != ';')
       node->cond = expr();
     expect(";");
-    //printf("# *(token->start): '%c'\n", *(token->start));
     if (*(token->start) != ')')
       node->inc = expr();
     expect(")");

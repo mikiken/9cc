@@ -33,7 +33,7 @@ typedef struct Lvar Lvar;
 
 struct Lvar {
   Lvar *next; // 次の変数またはNULL
-  char *name;  // 変数の名前
+  char *name; // 変数の名前
   int len;    // 名前の文字数
   int offset; // RBPからのオフセット
 };
@@ -72,8 +72,7 @@ typedef enum {
   ND_LVAR,   // ローカル変数
   ND_RETURN, // return
   ND_IF,     // if
-  ND_WHILE,  // while
-  ND_FOR,    // for
+  ND_FOR,    // for | while
 } NodeKind;
 
 typedef struct Node Node;
