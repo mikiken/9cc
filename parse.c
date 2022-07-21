@@ -116,13 +116,16 @@ Node *stmt() {
   else if (consume(TK_FOR, "for")) {
     node = new_node(ND_FOR);
     expect("(");
-    if (*(token->next->start) != ';') // expectがtokenを引数として受け取るようにしたらリファクタリング
+    //printf("# *(token->start): '%c'\n", *(token->start));
+    if (*(token->start) != ';')
       node->init = expr();
     expect(";");
-    if (*(token->next->start) != ';')
+    //printf("# *(token->start): '%c'\n", *(token->start));
+    if (*(token->start) != ';')
       node->cond = expr();
     expect(";");
-    if (*(token->next->start) != ')')
+    //printf("# *(token->start): '%c'\n", *(token->start));
+    if (*(token->start) != ')')
       node->inc = expr();
     expect(")");
     node->then = stmt();
