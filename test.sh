@@ -82,4 +82,7 @@ assert 2 'a=2*3; if(a<5) return 3; else if(a==7) return 4; return 2;'
 assert 2 'while(0) return 1; return 2;'
 assert 5 'x=0; while(x<5) x=x+1; return x;'
 
+assert 5 'x=0; for(i=0;i<5;i=i+1) x=x+1; return x;'
+#assert 3 'for (;;) return 3;'
+
 echo OK
