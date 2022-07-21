@@ -35,6 +35,10 @@ bool is_ident(char c) {
   return is_ident_first(c) || ('0' <= c && c <= '9'); 
 }
 
+bool is_keyword(char *p, char *keyword) {
+  return strncmp(p, keyword, strlen(keyword)) == 0 && !is_ident(*(p + strlen(keyword)));
+}
+
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *start, char*end) {
   Token *tok = calloc(1, sizeof(Token));
@@ -72,31 +76,31 @@ Token *tokenize() {
       continue;
     }
 
-    if (strncmp(p, "if", 2) == 0 && !is_ident(*(p+2))) {
+    if (is_keyword(p, "if")) {
       cur = new_token(TK_IF, cur, p, p+1);
       p += 2;
       continue;
     }
 
-    if (strncmp(p, "else", 4) == 0 && !is_ident(*(p+4))) {
+    if (is_keyword(p, "else")) {
       cur = new_token(TK_ELSE, cur, p, p+3);
       p += 4;
       continue;
     }
 
-    if (strncmp(p, "while", 5) == 0 && !is_ident(*(p+5))) {
+    if (is_keyword(p, "while")) {
       cur = new_token(TK_WHILE, cur, p, p+4);
       p += 5;
       continue;
     }
 
-    if (strncmp(p, "for", 3) == 0 && !is_ident(*(p+3))) {
+    if (is_keyword(p, "for")) {
       cur = new_token(TK_FOR, cur, p, p+2);
       p += 3;
       continue;
     }
 
-    if (strncmp(p, "return", 6) == 0 && !is_ident(*(p+6))) {
+    if (is_keyword(p, "return")) {
       cur = new_token(TK_RETURN, cur, p, p+5);
       p += 6;
       continue;

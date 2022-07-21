@@ -1,5 +1,18 @@
 #include "9cc.h"
 
+void gen_prologue() {
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, %d\n", locals->offset);
+}
+
+// 最後の式の結果がRAXに残っているのでそれが返り値になる
+void gen_epilogue() {
+  printf("  mov rsp, rbp\n");
+  printf("  pop rbp\n");
+  printf("  ret\n");
+}
+
 void gen_lval(Node *node) {
   if (node->kind != ND_LVAR)
     error("代入の左辺値が変数ではありません");

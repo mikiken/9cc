@@ -67,7 +67,7 @@ bool at_eof() {
 
 Node *code[100];
 
-//void program();
+void program();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -77,6 +77,10 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+
+void parse() {
+  program();
+}
 
 void program() {
   int i = 0;

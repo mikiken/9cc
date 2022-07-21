@@ -56,7 +56,6 @@ bool at_eof();
 
 Token *tokenize();
 
-
 // 抽象構文木のノードの種類
 typedef enum {
   ND_ADD,    // +
@@ -97,6 +96,8 @@ extern Node *code[100];
 
 int label_count; // アセンブラのラベルの通し番号
 
-void program();
+void parse();
 
+void gen_prologue();
+void gen_epilogue();
 void gen(Node *node);

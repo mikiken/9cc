@@ -14,33 +14,24 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   // トークナイズする
   token = tokenize();
-  // 抽象構文木を構築
-  //Node *node = program();
-  program();
+  
+  parse();
   
   // アセンブリの前半部分を出力
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");
   printf("main:\n");
 
-  // プロローグ
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, %d\n", locals->offset);
+  gen_prologue();
 
   // 先頭の式から順にコード生成
   for (int i = 0; code[i]; i++) {
     gen(code[i]);
-
     // 式の評価結果としてスタックに1つの値が残っているはずなので、スタックが溢れないようにpopしておく
     printf("  pop rax\n");
   }
 
-  // エピローグ
-  // 最後の式の結果がRAXに残っているのでそれが返り値になる
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
+  gen_epilogue();
 
   return 0;
 }
