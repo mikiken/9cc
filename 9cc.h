@@ -39,9 +39,8 @@ struct Lvar {
 };
 
 // ローカル変数のリスト
-Lvar *locals;
-
-void *init_locals();
+Lvar *locals; // リストの先頭を指すポインタ
+Lvar tail; // リストの末尾を表す
 
 // 入力プログラム
 extern char *user_input;
@@ -97,7 +96,7 @@ struct Node {
 
 };
 
-Node top; // stmtのリストの先頭(ダミーノード)
+Node stmt_head; // stmtのリストの先頭(ダミーノード)
 
 int label_count; // アセンブラのラベルの通し番号
 

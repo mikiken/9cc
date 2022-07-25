@@ -54,11 +54,12 @@ Lvar *find_lvar() {
   return NULL;
 }
 
-void *init_locals() {
-  Lvar head;
-  head.offset = 0;
-  head.next = NULL;
-  locals = &head;
+void init_locals() {
+  tail.offset = 0;
+  tail.next = NULL;
+  tail.len = 0;
+  tail.name = NULL;
+  locals = &tail;
 }
 
 bool at_eof() {
@@ -84,7 +85,7 @@ void parse() {
 }
 
 void program() {
-  Node *cur = &top;
+  Node *cur = &stmt_head;
   while (!at_eof()) {
     cur = cur->next = new_node(ND_STMT);
     cur->body = stmt();

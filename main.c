@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   gen_prologue();
 
   // 先頭の式から順にコード生成
-  for (Node *cur = top.next; cur; cur = cur->next) {
+  for (Node *cur = stmt_head.next; cur; cur = cur->next) {
     gen(cur->body);
     printf("  pop rax\n");
   }

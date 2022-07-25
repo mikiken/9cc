@@ -3,7 +3,8 @@
 void gen_prologue() {
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, %d\n", locals->offset);
+  if (locals->offset)
+    printf("  sub rsp, %d\n", locals->offset);
 }
 
 // 最後の式の結果がRAXに残っているのでそれが返り値になる
