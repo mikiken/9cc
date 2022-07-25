@@ -8,7 +8,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  init_locals();
   label_count = 0;
   
   user_input = argv[1];
@@ -25,9 +24,8 @@ int main(int argc, char **argv) {
   gen_prologue();
 
   // 先頭の式から順にコード生成
-  for (int i = 0; code[i]; i++) {
-    gen(code[i]);
-    // 式の評価結果としてスタックに1つの値が残っているはずなので、スタックが溢れないようにpopしておく
+  for (Node *cur = top.next; cur; cur = cur->next) {
+    gen(cur->body);
     printf("  pop rax\n");
   }
 

@@ -58,6 +58,7 @@ Token *tokenize();
 
 // 抽象構文木のノードの種類
 typedef enum {
+  ND_STMT,
   ND_ADD,    // +
   ND_SUB,    // -
   ND_MUL,    // *
@@ -90,9 +91,13 @@ struct Node {
   // for (init; cond; inc) then;
   Node *init;
   Node *inc;
+  // kind == ND_STMT
+  Node *body; // statementの内容
+  Node *next; // next statement
+
 };
 
-extern Node *code[100];
+Node top; // stmtのリストの先頭(ダミーノード)
 
 int label_count; // アセンブラのラベルの通し番号
 

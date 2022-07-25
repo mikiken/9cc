@@ -79,16 +79,17 @@ Node *unary();
 Node *primary();
 
 void parse() {
+  init_locals();
   program();
 }
 
 void program() {
-  int i = 0;
+  Node *cur = &top;
   while (!at_eof()) {
-    code[i] = stmt();
-    i++;
+    cur = cur->next = new_node(ND_STMT);
+    cur->body = stmt();
   }
-  code[i] = NULL;
+  cur->next = NULL;
 }
 
 Node *stmt() {
