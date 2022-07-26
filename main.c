@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  label_count = 0;
+  label = 0;
   
   user_input = argv[1];
   // トークナイズする

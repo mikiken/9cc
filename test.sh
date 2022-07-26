@@ -85,4 +85,9 @@ assert 5 'x=0; while(x<5) x=x+1; return x;'
 assert 5 'x=0; for(i=0;i<5;i=i+1) x=x+1; return x;'
 assert 3 'for (;;) return 3;'
 
+assert 2 '{ return 2; }'
+assert 8 '{a=2; b = 6; return a+b;}'
+assert 3 '{ {1; {2;} return 3;} }'
+assert 20 'a=0; for(i=0; i<10; i=i+1){a=a+2;} return a;'
+
 echo OK

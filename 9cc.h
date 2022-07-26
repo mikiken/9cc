@@ -98,7 +98,7 @@ struct Node {
 
 Node stmt_head; // stmtのリストの先頭(ダミーノード)
 
-int label_count; // アセンブラのラベルの通し番号
+int label; // アセンブラのラベルの通し番号
 
 void parse();
 

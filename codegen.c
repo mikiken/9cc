@@ -25,6 +25,12 @@ void gen_lval(Node *node) {
 
 void gen(Node *node) {
   switch (node->kind) {
+    case ND_STMT:
+      for (Node *n = node; n; n = n->next) {
+        gen(n->body);
+        printf("  pop rax\n");
+      }
+      return;
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
@@ -54,41 +60,41 @@ void gen(Node *node) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.else%d\n",label_count);
+        printf("  je  .L.else%d\n",label);
         gen(node->then);
-        printf("  jmp .L.end%d\n", label_count);
+        printf("  jmp .L.end%d\n", label);
 
-        printf(".L.else%d:\n", label_count);
+        printf(".L.else%d:\n", label);
         gen(node->els);
 
-        printf(".L.end%d:\n", label_count);
+        printf(".L.end%d:\n", label);
       } else {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.end%d\n",label_count);
+        printf("  je  .L.end%d\n",label);
         gen(node->then);
 
-        printf(".L.end%d:\n", label_count);
+        printf(".L.end%d:\n", label);
       }
-      label_count++;
+      label++;
       return;
     case ND_FOR:
       if (node->init)
         gen(node->init);
-      printf(".L.begin%d:\n", label_count);
+      printf(".L.begin%d:\n", label);
       if (node->cond) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.end%d\n", label_count);
+        printf("  je  .L.end%d\n", label);
       }
       gen(node->then);
       if (node->inc)
         gen(node->inc);
-      printf("  jmp .L.begin%d\n", label_count);
-      printf(".L.end%d:\n", label_count);
-      label_count++;
+      printf("  jmp .L.begin%d\n", label);
+      printf(".L.end%d:\n", label);
+      label++;
       return;
   }
 

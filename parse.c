@@ -66,8 +66,6 @@ bool at_eof() {
   return token->kind == TK_EOF;
 }
 
-Node *code[100];
-
 void program();
 Node *stmt();
 Node *expr();
@@ -132,6 +130,17 @@ Node *stmt() {
       node->inc = expr();
     expect(")");
     node->then = stmt();
+  }
+
+  else if (consume(TK_RESERVED, "{")) {
+    node = new_node(ND_STMT);
+    Node head;
+    Node *cur = &head;
+    while (!consume(TK_RESERVED, "}")) {
+      cur = cur->next = new_node(ND_STMT);
+      cur->body = stmt();
+    }
+    node = head.next;
   }
   
   else {
