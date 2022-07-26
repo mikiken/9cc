@@ -8,8 +8,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  label = 0;
-  
   user_input = argv[1];
   // トークナイズする
   token = tokenize();

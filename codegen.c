@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+int label_count;
+
 void gen_prologue() {
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
@@ -56,46 +58,50 @@ void gen(Node *node) {
       printf("  ret\n");
       return;
     case ND_IF:
+    {
+      int label = label_count++;
       if (node->els) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je  .L.else%d\n",label);
         gen(node->then);
-        printf("  jmp .L.end%d\n", label);
+        printf("  jmp .L.endif%d\n", label);
 
         printf(".L.else%d:\n", label);
         gen(node->els);
 
-        printf(".L.end%d:\n", label);
+        printf(".L.endif%d:\n", label);
       } else {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.end%d\n",label);
+        printf("  je  .L.endif%d\n",label);
         gen(node->then);
 
-        printf(".L.end%d:\n", label);
+        printf(".L.endif%d:\n", label);
       }
-      label++;
       return;
+    }
     case ND_FOR:
+    {
+      int label = label_count++;
       if (node->init)
         gen(node->init);
-      printf(".L.begin%d:\n", label);
+      printf(".L.beginloop%d:\n", label);
       if (node->cond) {
         gen(node->cond);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je  .L.end%d\n", label);
+        printf("  je  .L.endloop%d\n", label);
       }
       gen(node->then);
       if (node->inc)
         gen(node->inc);
-      printf("  jmp .L.begin%d\n", label);
-      printf(".L.end%d:\n", label);
-      label++;
+      printf("  jmp .L.beginloop%d\n", label);
+      printf(".L.endloop%d:\n", label);
       return;
+    }
   }
 
   gen(node->lhs);

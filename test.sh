@@ -90,4 +90,11 @@ assert 8 '{a=2; b = 6; return a+b;}'
 assert 3 '{ {1; {2;} return 3;} }'
 assert 20 'a=0; for(i=0; i<10; i=i+1){a=a+2;} return a;'
 
+assert 6 'a=0; for(i=0; i<10; i=i+1){a=a+2; if(a==6) return a;}'
+assert 40 'a=0; b=0; for(i=0; i<10; i=i+1){a=a+1; if(i==9){a=a*2;}} for(j=0; j<10; j=j+1){b=b+1; if(j==9){b=b*2;}} return a+b;'
+assert 3 'a=4; if(a==4){a=a+2;if(a==6) {a=a-3; return a;}}'
+assert 25 'sum=0; for(i=1;i<=5;i=i+1){for(j=1;j<=5;j=j+1){sum=sum+1;}} return sum;'
+assert 5 'a=5; if(a>=0){if(a==5){return a;}}'
+assert 10 'a=3; {b=7; if(a==3) return a+b;}'
+
 echo OK

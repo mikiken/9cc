@@ -98,8 +98,6 @@ struct Node {
 
 Node stmt_head; // stmtのリストの先頭(ダミーノード)
 
-int label; // アセンブラのラベルの通し番号
-
 void parse();
 
 void gen_prologue();
