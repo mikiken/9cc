@@ -20,13 +20,7 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   gen_prologue();
-
-  // 先頭の式から順にコード生成
-  for (Node *cur = stmt_head.next; cur; cur = cur->next) {
-    gen(cur->body);
-    printf("  pop rax\n");
-  }
-
+  gen(stmt_head.next);
   gen_epilogue();
 
   return 0;
