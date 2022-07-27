@@ -30,7 +30,6 @@ void gen(Node *node) {
     case ND_STMT:
       for (Node *n = node; n; n = n->next) {
         gen(n->body);
-        printf("  pop rax\n");
       }
       return;
     case ND_NUM:
