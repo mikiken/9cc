@@ -99,4 +99,6 @@ assert 10 'a=3; {b=7; if(a==3) return a+b;}'
 
 assert 3 'a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;'
 
+assert 5 'return foo();'
+
 echo OK

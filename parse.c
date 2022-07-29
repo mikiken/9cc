@@ -47,11 +47,30 @@ int expect_number() {
   return val;
 }
 
-Lvar *find_lvar() {
+Lvar *find_lvar(Token *tok) {
   for (Lvar *var = locals; var != NULL; var = var->next)
-    if (var->len == token->len && !memcmp(token->start, var->name, var->len))
+    if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
       return var;
   return NULL;
+}
+
+Node *new_lvar_node(Token *tok) {
+  Node *node = new_node(ND_LVAR);
+  Lvar *lvar = find_lvar(tok);
+  
+  if (lvar != NULL) {
+    node->offset = lvar->offset;
+  } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
+    lvar = calloc(1, sizeof(Lvar));
+    lvar->len = tok->len;
+    lvar->offset = locals->offset + 8;
+    lvar->name = tok->start;
+    lvar->next = locals;
+    locals = lvar;
+    
+    node->offset = lvar->offset;
+  }
+  return node;
 }
 
 void init_locals() {
@@ -234,25 +253,24 @@ Node *primary() {
     expect(")");
     return node;
   }
-  else if (token->kind == TK_IDENT) { // ローカル変数の場合
-    Node *node = new_node(ND_LVAR);
-    Lvar *lvar = find_lvar();
-    
-    if (lvar != NULL) {
-      node->offset = lvar->offset;
-    } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
-      lvar = calloc(1, sizeof(Lvar));
-      lvar->len = token->len;
-      lvar->offset = locals->offset + 8;
-      lvar->name = token->start;
-      lvar->next = locals;
-      locals = lvar;
-      
-      node->offset = lvar->offset;
-    }
+
+  else if (token->kind == TK_IDENT) {
+    Node *node;
+    Token *tok = token;
     token = token->next;
+    if (consume(TK_RESERVED, "(")) { // 関数呼び出しの場合
+      // 今後ここに引数のparse処理が入るはず
+      expect(")");
+      node = new_node(ND_FUNCALL);
+      node->func_name = calloc(tok->len, sizeof(char));
+      memcpy(node->func_name, tok->start, tok->len);
+    }
+    else { // ローカル変数の場合
+      node = new_lvar_node(tok);
+    }
     return node;
   }
+
   else
     return new_num(expect_number()); // それ以外は整数のはず
 }

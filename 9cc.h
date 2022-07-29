@@ -72,6 +72,7 @@ typedef enum {
   ND_RETURN, // return
   ND_IF,     // if
   ND_FOR,    // for | while
+  ND_FUNCALL,// function call
 } NodeKind;
 
 typedef struct Node Node;
@@ -93,7 +94,8 @@ struct Node {
   // kind == ND_STMT
   Node *body; // statementの内容
   Node *next; // next statement
-
+  // kind == ND_FUNCALL
+  char *func_name;
 };
 
 Node stmt_head; // stmtのリストの先頭(ダミーノード)

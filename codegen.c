@@ -101,6 +101,9 @@ void gen(Node *node) {
       printf(".L.end.%d:\n", label);
       return;
     }
+    case ND_FUNCALL:
+      printf("  call %s\n", node->func_name);
+      return;
   }
 
   gen(node->lhs);

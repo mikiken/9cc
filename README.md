@@ -8,8 +8,7 @@ C言語(のサブセット)コンパイラ
 - `return` statement
 - `if` `else` statement
 - `while` `for` statement
-
-
+- `{…}` compound statements (blocks)
 
 ## BNF
 ```
@@ -27,5 +26,5 @@ relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
 unary      = ("+" | "-")? primary
-primary    = num | ident | "(" expr ")"
+primary    = num | ident ("(" ")")? | "(" expr ")"
 ```
