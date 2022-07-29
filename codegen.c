@@ -51,7 +51,7 @@ void gen(Node *node) {
       return;
     case ND_RETURN:
       gen(node->lhs);
-      printf("  pop rax\n");
+      printf("  pop rax\n"); // 返り値をraxにセット
       printf("  mov rsp, rbp\n");
       printf("  pop rbp\n");
       printf("  ret\n");
@@ -103,6 +103,7 @@ void gen(Node *node) {
     }
     case ND_FUNCALL:
       printf("  call %s\n", node->func_name);
+      printf("  push rax\n"); // callした関数の返り値をスタックトップに積む
       return;
   }
 

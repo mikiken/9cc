@@ -1,10 +1,33 @@
 #!/bin/bash
+cat << EOT >> tmp2.c
+int foo() { return 5; }
+EOT
+cc -c tmp2.c
+
 assert() {
   expected="$1"
   input="$2"
 
   ./9cc "$input" > tmp.s #9ccを実行し、アセンブリ(.s)を出力
   cc -o tmp tmp.s
+  ./tmp
+  actual="$?"
+
+  if [ "$actual" = "$expected" ]; then
+    echo "$input => $actual"
+  else
+    echo "$input => $expected expected, but got $actual"
+    exit 1
+  fi
+}
+
+assert_funcall() {
+  expected="$1"
+  input="$2"
+
+  ./9cc "$input" > tmp.s #9ccを実行し、アセンブリ(.s)を出力
+  cc -c tmp.s
+  cc -o tmp tmp.o tmp2.o
   ./tmp
   actual="$?"
 
@@ -99,6 +122,8 @@ assert 10 'a=3; {b=7; if(a==3) return a+b;}'
 
 assert 3 'a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;'
 
-assert 5 'return foo();'
+assert_funcall 5 'return foo();'
+assert_funcall 8 '{return foo() + 3;}'
 
 echo OK
+rm tmp tmp.o tmp2.c tmp2.o
