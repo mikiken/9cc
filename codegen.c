@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 int label_count;
+char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 void gen_prologue() {
   printf("  push rbp\n");
@@ -102,9 +103,21 @@ void gen(Node *node) {
       return;
     }
     case ND_FUNCALL:
+    {
+      int arg_count = 0;
+      for (Node *n = node->expr; n; n = n->next) {
+        gen(n->body);
+        arg_count++;
+      }
+      if (arg_count > 6)
+        error("7個以上の引数をもつ関数呼び出しは現在対応していません\n");
+
+      for (int i = arg_count - 1; i >= 0; i--)
+        printf("  pop %s\n", argreg[i]);
       printf("  call %s\n", node->func_name);
       printf("  push rax\n"); // callした関数の返り値をスタックトップに積む
       return;
+    }
   }
 
   gen(node->lhs);

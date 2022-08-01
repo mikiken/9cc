@@ -9,6 +9,7 @@ C言語(のサブセット)コンパイラ
 - `if` `else` statement
 - `while` `for` statement
 - `{…}` compound statements (blocks)
+- function call with up to 6 args
 
 ## BNF
 ```
@@ -26,5 +27,6 @@ relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
 unary      = ("+" | "-")? primary
-primary    = num | ident ("(" ")")? | "(" expr ")"
+primary    = num | ident args? | "(" expr ")"
+args       = "(" (expr ("," expr)*)? ")"
 ```

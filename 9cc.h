@@ -58,6 +58,7 @@ Token *tokenize();
 // 抽象構文木のノードの種類
 typedef enum {
   ND_STMT,
+  ND_EXPR,
   ND_ADD,    // +
   ND_SUB,    // -
   ND_MUL,    // *
@@ -91,11 +92,12 @@ struct Node {
   // for (init; cond; inc) then;
   Node *init;
   Node *inc;
-  // kind == ND_STMT
-  Node *body; // statementの内容
-  Node *next; // next statement
-  // kind == ND_FUNCALL
+  // kind == ND_STMT || ND_EXPR
+  Node *body;
+  Node *next;
+  // func_name(expr, ...)
   char *func_name;
+  Node *expr;
 };
 
 Node stmt_head; // stmtのリストの先頭(ダミーノード)

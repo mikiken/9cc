@@ -258,12 +258,22 @@ Node *primary() {
     Node *node;
     Token *tok = token;
     token = token->next;
+
     if (consume(TK_RESERVED, "(")) { // 関数呼び出しの場合
-      // 今後ここに引数のparse処理が入るはず
-      expect(")");
       node = new_node(ND_FUNCALL);
       node->func_name = calloc(tok->len, sizeof(char));
       memcpy(node->func_name, tok->start, tok->len);
+
+      if (!consume(TK_RESERVED, ")")) {
+        Node head;
+        Node *cur = &head;
+        do {
+          cur = cur->next = new_node(ND_EXPR);
+          cur->body = expr();
+        } while (consume(TK_RESERVED, ","));
+        expect(")");
+        node->expr = head.next;
+      }     
     }
     else { // ローカル変数の場合
       node = new_lvar_node(tok);

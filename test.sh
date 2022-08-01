@@ -1,6 +1,9 @@
 #!/bin/bash
 cat << EOT >> tmp2.c
 int foo() { return 5; }
+int add2(int a, int b) {return a+b;}
+int add6(int a, int b, int c, int d, int e, int f) {return a+b+c+d+e+f;}
+int sub2(int a, int b) {return a-b;}
 EOT
 cc -c tmp2.c
 
@@ -124,6 +127,12 @@ assert 3 'a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;'
 
 assert_funcall 5 'return foo();'
 assert_funcall 8 '{return foo() + 3;}'
+
+assert_funcall 7 'return add2(2, 5);'
+assert_funcall 3 '{return sub2(10, 7);}'
+assert_funcall 21 '{return add6(1,2,3,4,5,6);}'
+assert_funcall 21 '{return add6(1,2,3,4,5,add2(2,4));}'
+assert_funcall 66 '{return add6(add6(1,2,3,add2(1,3),5,6),7,8,9,10,11);}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o
