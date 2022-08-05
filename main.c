@@ -11,17 +11,8 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   // トークナイズする
   token = tokenize();
-  
   parse();
-  
-  // アセンブリの前半部分を出力
-  printf(".intel_syntax noprefix\n");
-  printf(".globl main\n");
-  printf("main:\n");
-
-  gen_prologue();
-  gen(stmt_head.next);
-  gen_epilogue();
+  codegen();
 
   return 0;
 }

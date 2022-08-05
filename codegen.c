@@ -2,6 +2,7 @@
 
 int label_count;
 char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+char *current_func_name;
 
 void gen_prologue() {
   printf("  push rbp\n");
@@ -12,6 +13,7 @@ void gen_prologue() {
 
 // 最後の式の結果がRAXに残っているのでそれが返り値になる
 void gen_epilogue() {
+  printf(".L.return.%s:\n", current_func_name);
   printf("  mov rsp, rbp\n");
   printf("  pop rbp\n");
   printf("  ret\n");
@@ -53,9 +55,7 @@ void gen(Node *node) {
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n"); // 返り値をraxにセット
-      printf("  mov rsp, rbp\n");
-      printf("  pop rbp\n");
-      printf("  ret\n");
+      printf("  jmp .L.return.%s\n", current_func_name);
       return;
     case ND_IF:
     {
@@ -163,4 +163,17 @@ void gen(Node *node) {
   }
 
   printf("  push rax\n");
+}
+
+void codegen() {
+  printf(".intel_syntax noprefix\n");
+  // 先頭の関数から順にコード生成
+  for (Function *f = func_head.next; f; f = f->next) {
+    current_func_name = f->name;
+    printf(".globl %s\n", current_func_name);
+    printf("%s:\n", current_func_name);
+    gen_prologue();
+    gen(f->body);
+    gen_epilogue();
+  }
 }

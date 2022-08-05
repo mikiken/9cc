@@ -100,10 +100,15 @@ struct Node {
   Node *expr;
 };
 
-Node stmt_head; // stmtのリストの先頭(ダミーノード)
+typedef struct Function Function;
+
+struct Function {
+  Function *next;
+  Node *body;
+  char *name;
+};
+
+Function func_head; // 関数のリストの先頭
 
 void parse();
-
-void gen_prologue();
-void gen_epilogue();
-void gen(Node *node);
+void codegen();

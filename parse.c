@@ -102,12 +102,28 @@ void parse() {
 }
 
 void program() {
-  Node *cur = &stmt_head;
+  Function *cur_func = &func_head;
   while (!at_eof()) {
-    cur = cur->next = new_node(ND_STMT);
-    cur->body = stmt();
+    if (token->kind != TK_IDENT)
+      error_at(token->start, "関数ではありません");
+    Token *tok = token; // 関数名
+    token = token->next;
+    expect("(");
+    expect(")");
+    expect("{");
+    cur_func = cur_func->next = calloc(1, sizeof(Function));
+    cur_func->name = calloc(tok->len, sizeof(char));
+    memcpy(cur_func->name, tok->start, tok->len);
+    cur_func->body = new_node(ND_STMT);
+    Node head;
+    Node *cur_stmt = &head;
+    while (!consume(TK_RESERVED, "}")) {
+      cur_stmt = cur_stmt->next = new_node(ND_STMT);
+      cur_stmt->body = stmt();
+    }
+    cur_func->body= head.next;
   }
-  cur->next = NULL;
+  cur_func->next = NULL;
 }
 
 Node *stmt() {

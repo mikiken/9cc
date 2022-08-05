@@ -4,16 +4,19 @@ C言語(のサブセット)コンパイラ
 ## Implemented
 - `+` `-` `*` `/` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
-- local variables
+- ~~local variables~~
 - `return` statement
 - `if` `else` statement
 - `while` `for` statement
 - `{…}` compound statements (blocks)
 - function call with up to 6 args
+- function definition with no args or local variables
+
 
 ## BNF
 ```
-program    = stmt*
+program    = func_def*
+func_def   = ident args "{" stmt* "}"
 stmt       = expr ";"
            | "{" stmt* "}"
            | "if" "(" expr ")" stmt ("else" stmt)?
