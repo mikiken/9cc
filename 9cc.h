@@ -29,19 +29,6 @@ struct Token {
   int len;        // トークンの長さ
 };
 
-typedef struct Lvar Lvar;
-
-struct Lvar {
-  Lvar *next; // 次の変数またはNULL
-  char *name; // 変数の名前
-  int len;    // 名前の文字数
-  int offset; // RBPからのオフセット
-};
-
-// ローカル変数のリスト
-Lvar *locals; // リストの先頭を指すポインタ
-Lvar tail; // リストの末尾を表す
-
 // 入力プログラム
 extern char *user_input;
 
@@ -100,12 +87,22 @@ struct Node {
   Node *expr;
 };
 
+typedef struct Lvar Lvar;
+
+struct Lvar {
+  Lvar *next; // 次の変数またはNULL
+  char *name; // 変数の名前
+  int len;    // 名前の文字数
+  int offset; // RBPからのオフセット
+};
+
 typedef struct Function Function;
 
 struct Function {
   Function *next;
   Node *body;
   char *name;
+  Lvar *locals;
 };
 
 Function func_head; // 関数のリストの先頭

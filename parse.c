@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+Function *cur_func;
+
 Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -47,8 +49,9 @@ int expect_number() {
   return val;
 }
 
+#if 1
 Lvar *find_lvar(Token *tok) {
-  for (Lvar *var = locals; var != NULL; var = var->next)
+  for (Lvar *var = cur_func->locals; var != NULL; var = var->next)
     if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
       return var;
   return NULL;
@@ -63,23 +66,17 @@ Node *new_lvar_node(Token *tok) {
   } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
-    lvar->offset = locals->offset + 8;
+    lvar->offset = cur_func->locals->offset + 8;
     lvar->name = tok->start;
-    lvar->next = locals;
-    locals = lvar;
+    lvar->next = cur_func->locals;
+    cur_func->locals = lvar;
     
     node->offset = lvar->offset;
   }
   return node;
 }
 
-void init_locals() {
-  tail.offset = 0;
-  tail.next = NULL;
-  tail.len = 0;
-  tail.name = NULL;
-  locals = &tail;
-}
+#endif
 
 bool at_eof() {
   return token->kind == TK_EOF;
@@ -97,12 +94,12 @@ Node *unary();
 Node *primary();
 
 void parse() {
-  init_locals();
+  //init_locals();
   program();
 }
 
 void program() {
-  Function *cur_func = &func_head;
+  cur_func = &func_head;
   while (!at_eof()) {
     if (token->kind != TK_IDENT)
       error_at(token->start, "関数ではありません");
@@ -114,6 +111,12 @@ void program() {
     cur_func = cur_func->next = calloc(1, sizeof(Function));
     cur_func->name = calloc(tok->len, sizeof(char));
     memcpy(cur_func->name, tok->start, tok->len);
+    Lvar tail;
+    tail.len = 0;
+    tail.name = NULL;
+    tail.next = NULL;
+    tail.offset = 0;
+    cur_func->locals = &tail;
     cur_func->body = new_node(ND_STMT);
     Node head;
     Node *cur_stmt = &head;

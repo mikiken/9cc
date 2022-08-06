@@ -4,13 +4,13 @@ C言語(のサブセット)コンパイラ
 ## Implemented
 - `+` `-` `*` `/` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
-- ~~local variables~~
+- local variables
 - `return` statement
 - `if` `else` statement
 - `while` `for` statement
 - `{…}` compound statements (blocks)
 - function call with up to 6 args
-- function definition with no args or local variables
+- function definition with no args
 
 
 ## BNF
