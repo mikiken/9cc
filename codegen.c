@@ -4,13 +4,12 @@ int label_count;
 char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 Function *current_func;
 
+#if 0
 void gen_prologue() {
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  #if 1
   if (current_func->locals->offset)
     printf("  sub rsp, %d\n", current_func->locals->offset);
-  #endif
 }
 
 // 最後の式の結果がRAXに残っているのでそれが返り値になる
@@ -20,8 +19,8 @@ void gen_epilogue() {
   printf("  pop rbp\n");
   printf("  ret\n");
 }
+#endif
 
-#if 1
 void gen_lval(Node *node) {
   if (node->kind != ND_LVAR)
     error("代入の左辺値が変数ではありません");
@@ -30,7 +29,6 @@ void gen_lval(Node *node) {
   printf("  sub rax, %d\n", node->offset);
   printf("  push rax\n");
 }
-#endif
 
 void gen(Node *node) {
   switch (node->kind) {
@@ -42,7 +40,6 @@ void gen(Node *node) {
     case ND_NUM:
       printf("  push %d\n", node->val);
       return;
-    #if 1
     case ND_LVAR:
       gen_lval(node);
       printf("  pop rax\n");
@@ -57,7 +54,6 @@ void gen(Node *node) {
       printf("  mov [rax], rdi\n");
       printf("  push rdi\n");
       return;
-    #endif
     case ND_RETURN:
       gen(node->lhs);
       printf("  pop rax\n"); // 返り値をraxにセット
@@ -178,8 +174,23 @@ void codegen() {
     current_func = f;
     printf(".globl %s\n", f->name);
     printf("%s:\n", f->name);
-    gen_prologue();
+    // prologue
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    if (current_func->locals->offset)
+      printf("  sub rsp, %d\n", current_func->locals->offset);
+    int i = 0;
+    for (Lvar *param = f->params_head.next; param; param = param->next) {
+      printf("  mov rax, rbp\n");
+      printf("  sub rax, %d\n", param->offset);
+      printf("  mov [rax], %s\n", argreg[i++]);
+    }
+    // body
     gen(f->body);
-    gen_epilogue();
+    // epilogue
+    printf(".L.return.%s:\n", f->name);
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
   }
 }

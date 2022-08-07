@@ -9,14 +9,14 @@ C言語(のサブセット)コンパイラ
 - `if` `else` statement
 - `while` `for` statement
 - `{…}` compound statements (blocks)
-- function call with up to 6 args
-- function definition with no args
+- function call and definition with up to 6 args
 
 
 ## BNF
 ```
 program    = func_def*
-func_def   = ident args "{" stmt* "}"
+func_def   = ident params "{" stmt* "}"
+params     = "(" (ident ("," ident)*)? ")"
 stmt       = expr ";"
            | "{" stmt* "}"
            | "if" "(" expr ")" stmt ("else" stmt)?

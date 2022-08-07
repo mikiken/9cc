@@ -100,8 +100,9 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
-  Node *body;
   char *name;
+  Lvar params_head;
+  Node *body;
   Lvar *locals;
 };
 

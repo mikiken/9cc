@@ -137,5 +137,9 @@ assert_funcall 66 'main(){return add6(add6(1,2,3,add2(1,3),5,6),7,8,9,10,11);}'
 assert 5 'ret3(){return 3;} main(){return ret3()+2;}'
 assert 11 'ret6(){a=3; b=2; return a*b;} main(){a=5; return ret6()+a;}'
 
+assert 24 'fact(n){if(n==1) return 1; return n * fact(n-1);} main(){return fact(4);}'
+assert 55 'fib(n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib(n-1) + fib(n-2);}main() {return fib(10);}'
+assert 15 'combi(n,r){if(r==0) return 1; else if(n==r) return 1; else return combi(n-1,r-1) + combi(n-1,r);} main(){return combi(6,2);}'
+
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

@@ -49,7 +49,6 @@ int expect_number() {
   return val;
 }
 
-#if 1
 Lvar *find_lvar(Token *tok) {
   for (Lvar *var = cur_func->locals; var != NULL; var = var->next)
     if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
@@ -75,8 +74,6 @@ Node *new_lvar_node(Token *tok) {
   }
   return node;
 }
-
-#endif
 
 bool at_eof() {
   return token->kind == TK_EOF;
@@ -106,17 +103,52 @@ void program() {
     Token *tok = token; // 関数名
     token = token->next;
     expect("(");
-    expect(")");
+    // 関数定義
+    {
+      cur_func = cur_func->next = calloc(1, sizeof(Function));
+      cur_func->name = calloc(tok->len, sizeof(char));
+      memcpy(cur_func->name, tok->start, tok->len);
+    }
+    // 引数
+    {
+      cur_func->params_head.next = NULL;
+      cur_func->params_head.name = NULL;
+      cur_func->params_head.len = 0;
+      cur_func->params_head.offset = 0;
+      if (!consume(TK_RESERVED, ")")) {
+        Lvar *cur_param = &cur_func->params_head;
+        do {
+          cur_param->next = calloc(1, sizeof(Lvar));
+          cur_param->next->name = calloc(token->len, sizeof(char));
+          memcpy(cur_param->next->name, token->start, token->len);
+          cur_param->next->len = token->len;
+          cur_param->next->offset = cur_param->offset + 8;
+          cur_param = cur_param->next;
+          token = token->next;
+        } while (consume(TK_RESERVED, ","));
+        cur_param->next = NULL;
+        expect(")");
+      }
+    }
     expect("{");
-    cur_func = cur_func->next = calloc(1, sizeof(Function));
-    cur_func->name = calloc(tok->len, sizeof(char));
-    memcpy(cur_func->name, tok->start, tok->len);
-    Lvar tail;
-    tail.len = 0;
-    tail.name = NULL;
-    tail.next = NULL;
-    tail.offset = 0;
-    cur_func->locals = &tail;
+    // ローカル変数
+    Lvar lvar_tail;
+    lvar_tail.len = 0;
+    lvar_tail.name = NULL;
+    lvar_tail.next = NULL;
+    lvar_tail.offset = 0;
+    cur_func->locals = &lvar_tail;
+    // パラメータをローカル変数にコピー
+    for ( Lvar *cur_param = cur_func->params_head.next; cur_param; cur_param = cur_param->next) {
+      Lvar *new_lvar = calloc(1, sizeof(Lvar));
+      new_lvar->name = calloc(cur_param->len, sizeof(char));
+      memcpy(new_lvar->name, cur_param->name, cur_param->len);
+      new_lvar->len = cur_param->len;
+      new_lvar->offset = cur_param->offset;
+      new_lvar->next = cur_func->locals;
+      cur_func->locals = new_lvar;
+    }
+    // statement
     cur_func->body = new_node(ND_STMT);
     Node head;
     Node *cur_stmt = &head;
@@ -126,6 +158,7 @@ void program() {
     }
     cur_func->body= head.next;
   }
+  // 関数のリストの末端
   cur_func->next = NULL;
 }
 
