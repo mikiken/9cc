@@ -56,7 +56,7 @@ Lvar *find_lvar(Token *tok) {
   return NULL;
 }
 
-Node *new_lvar_node(TypeKind type, Token *tok) {
+Node *new_lvar_node(Type *type, Token *tok) {
   Node *node = new_node(ND_LVAR);
   Lvar *lvar = find_lvar(tok);
   
@@ -88,6 +88,20 @@ Node *lvar_node(Token *tok) {
   return node;
 }
 
+Type *specify_type() {
+  if (!consume(TK_TYPE, "int"))
+    return NULL;
+  Type *type = calloc(1, sizeof(Type));
+  type->kind = TYPE_INT;
+  while (consume(TK_RESERVED, "*")) {
+    Type *ty = calloc(1, sizeof(Type));
+    ty->kind = TYPE_PTR;
+    ty->ptr_to = type;
+    type = ty;
+  }
+  return type;
+}
+
 bool at_eof() {
   return token->kind == TK_EOF;
 }
@@ -104,21 +118,20 @@ Node *unary();
 Node *primary();
 
 void parse() {
-  //init_locals();
   program();
 }
 
 void program() {
   cur_func = &func_head;
   while (!at_eof()) {
-    expect(TK_TYPE, "int");
+    Type *func_type = specify_type();
     Token *tok = token; // 関数名
     token = token->next;
     expect(TK_RESERVED, "(");
     // 関数定義
     {
       cur_func = cur_func->next = calloc(1, sizeof(Function));
-      cur_func->type = TYPE_INT;
+      cur_func->type = func_type;
       cur_func->name = calloc(tok->len, sizeof(char));
       memcpy(cur_func->name, tok->start, tok->len);
     }
@@ -131,9 +144,8 @@ void program() {
       if (!consume(TK_RESERVED, ")")) {
         Lvar *cur_param = &cur_func->params_head;
         do {
-          expect(TK_TYPE, "int");
           cur_param->next = calloc(1, sizeof(Lvar));
-          cur_param->next->type = TYPE_INT;
+          cur_param->next->type = specify_type(); // parameterの型
           cur_param->next->name = calloc(token->len, sizeof(char));
           memcpy(cur_param->next->name, token->start, token->len);
           cur_param->next->len = token->len;
@@ -237,10 +249,10 @@ Node *stmt() {
   return node;
 }
 
-
 Node *expr() {
-  if (consume(TK_TYPE, "int")) {
-    Node *node = new_lvar_node(TYPE_INT, token);
+  Type *ty;
+  if ((ty = specify_type()) != NULL) {
+    Node *node = new_lvar_node(ty, token);
     token = token->next;
     return node;
   }
@@ -355,10 +367,10 @@ Node *primary() {
         } while (consume(TK_RESERVED, ","));
         expect(TK_RESERVED, ")");
         node->expr = head.next;
-      }     
+      }
     }
     else { // ローカル変数の場合
-      node = lvar_node(tok); // なんか別の関数lvar_node(?)作る
+      node = lvar_node(tok);
     }
     return node;
   }

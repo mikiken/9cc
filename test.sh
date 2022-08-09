@@ -139,15 +139,15 @@ assert 24 'int fact(int n){if(n==1) return 1; return n * fact(n-1);} int main(){
 assert 55 'int fib(int n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib(n-1) + fib(n-2);} int main() {return fib(10);}'
 assert 15 'int combi(int n, int r){if(r==0) return 1; else if(n==r) return 1; else return combi(n-1,r-1) + combi(n-1,r);} int main(){return combi(6,2);}'
 
-# ポインタ型が未実装のため、テストケースをコメントアウトした
-#assert 5 'int main(){int x; int *y; x=3; y=&x; return *y+2;}'
+assert 5 'int main(){int x; int *y; x=3; y=&x; return *y+2;}'
 assert 3 'int main(){int x; x=3; return *&x; }'
-#assert 3 'int main(){int x; int *y; int *z; x=3; y=&x; z=&y; return **z; }'
+assert 3 'int main(){int x; int *y; int *z; x=3; y=&x; z=&y; return **z; }'
 assert 5 'int main(){int x; int y; x=3; y=5; return *(&x-8); }'
 assert 3 'int main(){int x; int y; x=3; y=5; return *(&y+8); }'
-#assert 5 'int main(){int x; int *y; x=3; y=&x; *y=5; return x; }'
+assert 5 'int main(){int x; int *y; x=3; y=&x; *y=5; return x; }'
 assert 7 'int main(){int x; int y; x=3; y=5; *(&x-8)=7; return y; }'
 assert 7 'int main(){int x; int y; x=3; y=5; *(&y+8)=7; return x; }'
+assert 6 'int main() {int a; int *b; int **c; int ***d; a=6; b=&a; c=&b; d=&c; return ***d;}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

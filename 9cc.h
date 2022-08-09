@@ -92,23 +92,31 @@ struct Node {
 
 typedef enum {
   TYPE_INT, // int
+  TYPE_PTR, // pointer to ...
 } TypeKind;
+
+typedef struct Type Type;
+
+struct Type {
+  TypeKind kind; // 型の種類
+  Type *ptr_to;  // kind == TYPE_PTR
+};
 
 typedef struct Lvar Lvar;
 
 struct Lvar {
-  Lvar *next;    // 次の変数またはNULL
-  TypeKind type; // 型
-  char *name;    // 変数の名前
-  int len;       // 名前の文字数
-  int offset;    // RBPからのオフセット
+  Lvar *next; // 次の変数またはNULL
+  Type *type;  // 型
+  char *name; // 変数の名前
+  int len;    // 名前の文字数
+  int offset; // RBPからのオフセット
 };
 
 typedef struct Function Function;
 
 struct Function {
   Function *next;
-  TypeKind type;    // 型
+  Type *type;        // 型
   char *name;       // 関数名
   Lvar params_head; // 引数リストの先頭
   Node *body;       // statement
