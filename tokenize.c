@@ -106,6 +106,12 @@ Token *tokenize() {
       continue;
     }
 
+    if (is_keyword(p, "int")) {
+      cur = new_token(TK_TYPE, cur, p, p+2);
+      p += 3;
+      continue;
+    }
+
     if (is_ident_first(*p)) {
       char *start = p;
       do {

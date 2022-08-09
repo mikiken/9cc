@@ -33,8 +33,8 @@ bool consume(TokenKind kind, char *op) {
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
-void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->start, op, token->len))
+void expect(TokenKind kind, char *op) {
+  if (token->kind != kind || strlen(op) != token->len || memcmp(token->start, op, token->len))
     error_at(token->start, "'%s'ではありません", op);
   token = token->next;
 }
@@ -56,20 +56,33 @@ Lvar *find_lvar(Token *tok) {
   return NULL;
 }
 
-Node *new_lvar_node(Token *tok) {
+Node *new_lvar_node(TypeKind type, Token *tok) {
   Node *node = new_node(ND_LVAR);
   Lvar *lvar = find_lvar(tok);
   
   if (lvar != NULL) {
-    node->offset = lvar->offset;
+    error_at(tok->start, "定義済みの変数を再定義することはできません");
   } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
     lvar->offset = cur_func->locals->offset + 8;
     lvar->name = tok->start;
+    lvar->type = type;
     lvar->next = cur_func->locals;
     cur_func->locals = lvar;
     
+    node->offset = lvar->offset;
+  }
+  return node;
+}
+
+Node *lvar_node(Token *tok) {
+  Node *node = new_node(ND_LVAR);
+  Lvar *lvar = find_lvar(tok);
+
+  if (lvar == NULL) {
+    error_at(tok->start, "未定義の変数です");
+  } else {
     node->offset = lvar->offset;
   }
   return node;
@@ -98,14 +111,14 @@ void parse() {
 void program() {
   cur_func = &func_head;
   while (!at_eof()) {
-    if (token->kind != TK_IDENT)
-      error_at(token->start, "関数ではありません");
+    expect(TK_TYPE, "int");
     Token *tok = token; // 関数名
     token = token->next;
-    expect("(");
+    expect(TK_RESERVED, "(");
     // 関数定義
     {
       cur_func = cur_func->next = calloc(1, sizeof(Function));
+      cur_func->type = TYPE_INT;
       cur_func->name = calloc(tok->len, sizeof(char));
       memcpy(cur_func->name, tok->start, tok->len);
     }
@@ -118,7 +131,9 @@ void program() {
       if (!consume(TK_RESERVED, ")")) {
         Lvar *cur_param = &cur_func->params_head;
         do {
+          expect(TK_TYPE, "int");
           cur_param->next = calloc(1, sizeof(Lvar));
+          cur_param->next->type = TYPE_INT;
           cur_param->next->name = calloc(token->len, sizeof(char));
           memcpy(cur_param->next->name, token->start, token->len);
           cur_param->next->len = token->len;
@@ -127,10 +142,10 @@ void program() {
           token = token->next;
         } while (consume(TK_RESERVED, ","));
         cur_param->next = NULL;
-        expect(")");
+        expect(TK_RESERVED, ")");
       }
     }
-    expect("{");
+    expect(TK_RESERVED, "{");
     // ローカル変数
     Lvar lvar_tail;
     lvar_tail.len = 0;
@@ -166,9 +181,9 @@ Node *stmt() {
   Node *node;
   if (consume(TK_IF, "if")) {
     node = new_node(ND_IF);
-    expect("(");
+    expect(TK_RESERVED, "(");
     node->cond = expr();
-    expect(")");
+    expect(TK_RESERVED, ")");
     node->then = stmt();
     if (consume(TK_ELSE, "else"))
       node->els = stmt();
@@ -177,29 +192,29 @@ Node *stmt() {
   else if (consume(TK_RETURN, "return")) {
     node = new_node(ND_RETURN);
     node->lhs = expr();
-    expect(";");
+    expect(TK_RESERVED, ";");
   }
 
   else if (consume(TK_WHILE, "while")) {
     node = new_node(ND_FOR);
-    expect("(");
+    expect(TK_RESERVED, "(");
     node->cond = expr();
-    expect(")");
+    expect(TK_RESERVED, ")");
     node->then = stmt();
   }
 
   else if (consume(TK_FOR, "for")) {
     node = new_node(ND_FOR);
-    expect("(");
+    expect(TK_RESERVED, "(");
     if (*(token->start) != ';')
       node->init = expr();
-    expect(";");
+    expect(TK_RESERVED, ";");
     if (*(token->start) != ';')
       node->cond = expr();
-    expect(";");
+    expect(TK_RESERVED, ";");
     if (*(token->start) != ')')
       node->inc = expr();
-    expect(")");
+    expect(TK_RESERVED, ")");
     node->then = stmt();
   }
 
@@ -216,7 +231,7 @@ Node *stmt() {
   
   else {
     node = expr();
-    expect(";");
+    expect(TK_RESERVED, ";");
   }
   
   return node;
@@ -224,6 +239,11 @@ Node *stmt() {
 
 
 Node *expr() {
+  if (consume(TK_TYPE, "int")) {
+    Node *node = new_lvar_node(TYPE_INT, token);
+    token = token->next;
+    return node;
+  }
   return assign();
 }
 
@@ -312,7 +332,7 @@ Node *primary() {
   // 次のトークンが"("なら、"(" expr ")"のはず
   if (consume(TK_RESERVED, "(")) {
     Node *node = expr();
-    expect(")");
+    expect(TK_RESERVED, ")");
     return node;
   }
 
@@ -333,12 +353,12 @@ Node *primary() {
           cur = cur->next = new_node(ND_EXPR);
           cur->body = expr();
         } while (consume(TK_RESERVED, ","));
-        expect(")");
+        expect(TK_RESERVED, ")");
         node->expr = head.next;
       }     
     }
     else { // ローカル変数の場合
-      node = new_lvar_node(tok);
+      node = lvar_node(tok); // なんか別の関数lvar_node(?)作る
     }
     return node;
   }

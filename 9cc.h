@@ -16,6 +16,7 @@ typedef enum {
   TK_ELSE,     // else
   TK_WHILE,    // while
   TK_FOR,      // for
+  TK_TYPE,     // 型
 } TokenKind;
 
 typedef struct Token Token;
@@ -89,23 +90,29 @@ struct Node {
   Node *expr;
 };
 
+typedef enum {
+  TYPE_INT, // int
+} TypeKind;
+
 typedef struct Lvar Lvar;
 
 struct Lvar {
-  Lvar *next; // 次の変数またはNULL
-  char *name; // 変数の名前
-  int len;    // 名前の文字数
-  int offset; // RBPからのオフセット
+  Lvar *next;    // 次の変数またはNULL
+  TypeKind type; // 型
+  char *name;    // 変数の名前
+  int len;       // 名前の文字数
+  int offset;    // RBPからのオフセット
 };
 
 typedef struct Function Function;
 
 struct Function {
   Function *next;
-  char *name;
-  Lvar params_head;
-  Node *body;
-  Lvar *locals;
+  TypeKind type;    // 型
+  char *name;       // 関数名
+  Lvar params_head; // 引数リストの先頭
+  Node *body;       // statement
+  Lvar *locals;     // ローカル変数のリスト
 };
 
 Function func_head; // 関数のリストの先頭
