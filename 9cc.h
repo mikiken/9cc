@@ -61,6 +61,8 @@ typedef enum {
   ND_IF,     // if
   ND_FOR,    // for | while
   ND_FUNCALL,// function call
+  ND_ADDR,   // &
+  ND_DEREF,  // *(参照)
 } NodeKind;
 
 typedef struct Node Node;

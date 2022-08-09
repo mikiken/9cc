@@ -56,8 +56,6 @@ assert 4 'main(){return (3+5)/2;}'
 assert 10 'main(){return -10+20;}'
 assert 10 'main(){return +(+10);}'
 assert 10 'main(){return -(-10);}'
-assert 10 'main(){return + +10;}'
-assert 10 'main(){return - -10;}'
 assert 10 'main(){return (-(-15 + 25) + 50) / 4;}'
 
 assert 0 'main(){return 0==1;}'
@@ -140,6 +138,16 @@ assert 11 'ret6(){a=3; b=2; return a*b;} main(){a=5; return ret6()+a;}'
 assert 24 'fact(n){if(n==1) return 1; return n * fact(n-1);} main(){return fact(4);}'
 assert 55 'fib(n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib(n-1) + fib(n-2);}main() {return fib(10);}'
 assert 15 'combi(n,r){if(r==0) return 1; else if(n==r) return 1; else return combi(n-1,r-1) + combi(n-1,r);} main(){return combi(6,2);}'
+
+assert 5 'main(){x=3; y=&x; return *y+2;}'
+
+assert 3 'main(){ x=3; return *&x; }'
+assert 3 'main(){ x=3; y=&x; z=&y; return **z; }'
+assert 5 'main(){ x=3; y=5; return *(&x-8); }'
+assert 3 'main(){ x=3; y=5; return *(&y+8); }'
+assert 5 'main(){ x=3; y=&x; *y=5; return x; }'
+assert 7 'main(){ x=3; y=5; *(&x-8)=7; return y; }'
+assert 7 'main(){ x=3; y=5; *(&y+8)=7; return x; }'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o
