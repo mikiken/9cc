@@ -1,5 +1,8 @@
 #include "9cc.h"
 
+#define INT_SIZE 4
+#define PTR_SIZE 8
+
 int label_count;
 char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 Function *current_func;
@@ -20,6 +23,9 @@ void gen_addr(Node *node) {
 }
 
 void gen(Node *node) {
+  if (!node) {
+    error("nodeがNULLポインタです");
+  }
   switch (node->kind) {
     case ND_STMT:
       for (Node *n = node; n; n = n->next) {
@@ -57,8 +63,7 @@ void gen(Node *node) {
       printf("  pop rax\n"); // 返り値をraxにセット
       printf("  jmp .L.return.%s\n", current_func->name);
       return;
-    case ND_IF:
-    {
+    case ND_IF: {
       int label = label_count++;
       if (node->els) {
         gen(node->cond);
@@ -83,8 +88,7 @@ void gen(Node *node) {
       }
       return;
     }
-    case ND_FOR:
-    {
+    case ND_FOR: {
       int label = label_count++;
       if (node->init)
         gen(node->init);
@@ -102,8 +106,7 @@ void gen(Node *node) {
       printf(".L.end.%d:\n", label);
       return;
     }
-    case ND_FUNCALL:
-    {
+    case ND_FUNCALL: {
       int arg_count = 0;
       for (Node *n = node->expr; n; n = n->next) {
         gen(n->body);
@@ -165,10 +168,10 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
-void codegen() {
+void codegen(Function f_head) {
   printf(".intel_syntax noprefix\n");
   // 先頭の関数から順にコード生成
-  for (Function *f = func_head.next; f; f = f->next) {
+  for (Function *f = f_head.next; f; f = f->next) {
     current_func = f;
     printf(".globl %s\n", f->name);
     printf("%s:\n", f->name);

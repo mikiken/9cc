@@ -5,6 +5,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum {
+  TYPE_NULL,
+  TYPE_INT, // int
+  TYPE_PTR, // pointer to ...
+} TypeKind;
+
+typedef struct Type Type;
+
+struct Type {
+  TypeKind kind; // 型の種類
+  Type *ptr_to;  // kind == TYPE_PTR
+};
+
+typedef struct FuncDeclaration FuncDeclaration;
+
+struct FuncDeclaration {
+  FuncDeclaration *next;
+  Type *ret_type;  // return type
+  char *name;  // 関数名
+  int len;     // 関数名の長さ
+};
+
+FuncDeclaration *func_declaration_list; // 宣言のリスト
+FuncDeclaration func_declaration_tail;
+
 // トークンの種類
 typedef enum {
   TK_RESERVED, // 記号
@@ -75,6 +100,7 @@ struct Node {
   Node *rhs;     // 右辺(right-hand side)
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う
+  Type *type;
   // if (cond) then; els...
   Node *cond;
   Node *then;
@@ -85,21 +111,9 @@ struct Node {
   // kind == ND_STMT || ND_EXPR
   Node *body;
   Node *next;
-  // func_name(expr, ...)
+  // kind == ND_FUNCALL  func_name(expr, ...)
   char *func_name;
   Node *expr;
-};
-
-typedef enum {
-  TYPE_INT, // int
-  TYPE_PTR, // pointer to ...
-} TypeKind;
-
-typedef struct Type Type;
-
-struct Type {
-  TypeKind kind; // 型の種類
-  Type *ptr_to;  // kind == TYPE_PTR
 };
 
 typedef struct Lvar Lvar;
@@ -126,4 +140,6 @@ struct Function {
 Function func_head; // 関数のリストの先頭
 
 void parse();
+Node *new_node(NodeKind kind);
+void make_typed_ast();
 void codegen();

@@ -102,6 +102,23 @@ Type *specify_type() {
   return type;
 }
 
+void init_func_declaration() {
+  func_declaration_tail.ret_type = NULL;
+  func_declaration_tail.name = "";
+  func_declaration_tail.len = 0;
+  func_declaration_list = &func_declaration_tail;
+}
+
+void new_func_declaration(Type *type, char *name, int len) {
+  FuncDeclaration *new_func_declaration = calloc(1, sizeof(FuncDeclaration));
+  new_func_declaration->ret_type = type;
+  new_func_declaration->name = calloc(len + 1, sizeof(char));
+  memcpy(new_func_declaration->name, name, len);
+  new_func_declaration->len = len;
+  new_func_declaration->next = func_declaration_list;
+  func_declaration_list = new_func_declaration;
+}
+
 bool at_eof() {
   return token->kind == TK_EOF;
 }
@@ -118,6 +135,7 @@ Node *unary();
 Node *primary();
 
 void parse() {
+  init_func_declaration();
   program();
 }
 
@@ -128,12 +146,13 @@ void program() {
     Token *tok = token; // 関数名
     token = token->next;
     expect(TK_RESERVED, "(");
-    // 関数定義
+    // 関数定義または関数宣言
     {
       cur_func = cur_func->next = calloc(1, sizeof(Function));
       cur_func->type = func_type;
-      cur_func->name = calloc(tok->len, sizeof(char));
+      cur_func->name = calloc(tok->len + 1, sizeof(char));
       memcpy(cur_func->name, tok->start, tok->len);
+      new_func_declaration(func_type, cur_func->name, tok->len);
     }
     // 引数
     {
@@ -146,7 +165,7 @@ void program() {
         do {
           cur_param->next = calloc(1, sizeof(Lvar));
           cur_param->next->type = specify_type(); // parameterの型
-          cur_param->next->name = calloc(token->len, sizeof(char));
+          cur_param->next->name = calloc(token->len + 1, sizeof(char));
           memcpy(cur_param->next->name, token->start, token->len);
           cur_param->next->len = token->len;
           cur_param->next->offset = cur_param->offset + 8;
@@ -157,33 +176,37 @@ void program() {
         expect(TK_RESERVED, ")");
       }
     }
-    expect(TK_RESERVED, "{");
-    // ローカル変数
-    Lvar lvar_tail;
-    lvar_tail.len = 0;
-    lvar_tail.name = NULL;
-    lvar_tail.next = NULL;
-    lvar_tail.offset = 0;
-    cur_func->locals = &lvar_tail;
-    // パラメータをローカル変数にコピー
-    for ( Lvar *cur_param = cur_func->params_head.next; cur_param; cur_param = cur_param->next) {
-      Lvar *new_lvar = calloc(1, sizeof(Lvar));
-      new_lvar->name = calloc(cur_param->len, sizeof(char));
-      memcpy(new_lvar->name, cur_param->name, cur_param->len);
-      new_lvar->len = cur_param->len;
-      new_lvar->offset = cur_param->offset;
-      new_lvar->next = cur_func->locals;
-      cur_func->locals = new_lvar;
-    }
-    // statement
-    cur_func->body = new_node(ND_STMT);
-    Node head;
-    Node *cur_stmt = &head;
-    while (!consume(TK_RESERVED, "}")) {
-      cur_stmt = cur_stmt->next = new_node(ND_STMT);
-      cur_stmt->body = stmt();
-    }
-    cur_func->body= head.next;
+    if (consume(TK_RESERVED, ";")) { // 関数宣言
+      error("関数宣言は未対応です");
+    } else { // 関数定義
+      expect(TK_RESERVED, "{");
+      // ローカル変数
+      Lvar lvar_tail;
+      lvar_tail.len = 0;
+      lvar_tail.name = NULL;
+      lvar_tail.next = NULL;
+      lvar_tail.offset = 0;
+      cur_func->locals = &lvar_tail;
+      // パラメータをローカル変数にコピー
+      for ( Lvar *cur_param = cur_func->params_head.next; cur_param; cur_param = cur_param->next) {
+        Lvar *new_lvar = calloc(1, sizeof(Lvar));
+        new_lvar->name = calloc(cur_param->len + 1, sizeof(char));
+        memcpy(new_lvar->name, cur_param->name, cur_param->len);
+        new_lvar->len = cur_param->len;
+        new_lvar->offset = cur_param->offset;
+        new_lvar->next = cur_func->locals;
+        cur_func->locals = new_lvar;
+      }
+      // statement
+      cur_func->body = new_node(ND_STMT);
+      Node head;
+      Node *cur_stmt = &head;
+      while (!consume(TK_RESERVED, "}")) {
+        cur_stmt = cur_stmt->next = new_node(ND_STMT);
+        cur_stmt->body = stmt();
+      }
+      cur_func->body= head.next;
+      }
   }
   // 関数のリストの末端
   cur_func->next = NULL;
@@ -253,6 +276,7 @@ Node *expr() {
   Type *ty;
   if ((ty = specify_type()) != NULL) {
     Node *node = new_lvar_node(ty, token);
+
     token = token->next;
     return node;
   }
@@ -355,7 +379,7 @@ Node *primary() {
 
     if (consume(TK_RESERVED, "(")) { // 関数呼び出しの場合
       node = new_node(ND_FUNCALL);
-      node->func_name = calloc(tok->len, sizeof(char));
+      node->func_name = calloc(tok->len + 1, sizeof(char));
       memcpy(node->func_name, tok->start, tok->len);
 
       if (!consume(TK_RESERVED, ")")) {

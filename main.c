@@ -9,10 +9,12 @@ int main(int argc, char **argv) {
   }
 
   user_input = argv[1];
-  // トークナイズする
+
   token = tokenize();
   parse();
-  codegen();
+  //Function f_head_typed = make_typed_ast(); // 型情報を付与する
+  make_typed_ast();
+  codegen(func_head);
 
   return 0;
 }

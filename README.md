@@ -1,6 +1,17 @@
 # 9cc
 C言語(のサブセット)コンパイラ
 
+# build
+```
+# build
+$ git clone https://github.com/mikiken/9cc.git
+$ cd 9cc
+$ make
+
+# test
+$ make test
+```
+
 ## Implemented
 - `+` `-` `*` `/` operators
 - `<` `<=` `>` `>=` `==` `!=` operators

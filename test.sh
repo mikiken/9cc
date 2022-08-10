@@ -1,9 +1,21 @@
 #!/bin/bash
 cat << EOT >> tmp2.c
+#include <stdlib.h>
+
 int foo() { return 5; }
 int add2(int a, int b) {return a+b;}
 int add6(int a, int b, int c, int d, int e, int f) {return a+b+c+d+e+f;}
 int sub2(int a, int b) {return a-b;}
+void alloc4(int **p, int a, int b, int c, int d) {
+  *p = malloc(sizeof(int) * 5);
+  (*p)[0] = a;
+  (*p)[1] = b;
+  (*p)[2] = c;
+  (*p)[3] = d;
+  (*p)[4] = 0;
+} 
+void no_interaction_to_ptr(int *p){};
+void no_interaction_to_ptr_to_ptr(int **p){};
 EOT
 cc -c tmp2.c
 
@@ -122,7 +134,7 @@ assert 5 'int main(){int a; a=5; if(a>=0){if(a==5){return a;}}}'
 assert 10 'int main(){int a; int b; a=3; {b=7; if(a==3) return a+b;}}'
 
 assert 3 'int main(){int a; a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;}'
-
+<< COMMENTOUT
 assert_funcall 5 'int main(){return foo();}'
 assert_funcall 8 'int main(){{return foo() + 3;}}'
 
@@ -138,16 +150,24 @@ assert 11 'int ret6(){int a; int b; a=3; b=2; return a*b;} int main(){int a; a=5
 assert 24 'int fact(int n){if(n==1) return 1; return n * fact(n-1);} int main(){return fact(4);}'
 assert 55 'int fib(int n) {if (n==1) {return 1;}if (n==2) {return 1;} return fib(n-1) + fib(n-2);} int main() {return fib(10);}'
 assert 15 'int combi(int n, int r){if(r==0) return 1; else if(n==r) return 1; else return combi(n-1,r-1) + combi(n-1,r);} int main(){return combi(6,2);}'
+COMMENTOUT
 
 assert 5 'int main(){int x; int *y; x=3; y=&x; return *y+2;}'
 assert 3 'int main(){int x; x=3; return *&x; }'
-assert 3 'int main(){int x; int *y; int *z; x=3; y=&x; z=&y; return **z; }'
-assert 5 'int main(){int x; int y; x=3; y=5; return *(&x-8); }'
-assert 3 'int main(){int x; int y; x=3; y=5; return *(&y+8); }'
+assert 3 'int main(){int x; int *y; int **z; x=3; y=&x; z=&y; return **z; }'
+#assert 5 'int main(){int x; int y; x=3; y=5; return *(&x-2); }'
+#assert 3 'int main(){int x; int y; x=3; y=5; return *(&y+2); }'
 assert 5 'int main(){int x; int *y; x=3; y=&x; *y=5; return x; }'
-assert 7 'int main(){int x; int y; x=3; y=5; *(&x-8)=7; return y; }'
-assert 7 'int main(){int x; int y; x=3; y=5; *(&y+8)=7; return x; }'
+#assert 7 'int main(){int x; int y; x=3; y=5; *(&x-2)=7; return y; }'
+#assert 7 'int main(){int x; int y; x=3; y=5; *(&y+2)=7; return x; }'
+
+# function declaration
+#assert 0 'int no_interaction_to_ptr(); int main() {int p; no_interaction_to_ptr(&p); return 0;}'
+#assert 0 'int no_interaction_to_ptr(); int main() {int *p; no_interaction_to_ptr_to_ptr(&p); return 0;}'
 assert 6 'int main() {int a; int *b; int **c; int ***d; a=6; b=&a; c=&b; d=&c; return ***d;}'
+
+#assert_funcall 4 'int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q; q=p+2; return *q;}'
+#assert_funcall 2 'int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q; q=p+2; q=q-1; return *q;}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o
