@@ -3,10 +3,10 @@
 FuncDeclaration *find_declaration_by_name(char *name) {
   for (FuncDeclaration *declaration = func_declaration_list; declaration; declaration = declaration->next) {
     if (!name) {
-      error("nameがNULLポインターです");
+      error("nameがNULLポインタです");
     }
     if (!declaration->name) {
-      error("declaration->nameがNULLポインターです");
+      error("declaration->nameがNULLポインタです");
     }
     if (!strcmp(declaration->name, name)) { //名前が一致している場合
       return declaration;
@@ -44,11 +44,6 @@ Node *new_typed_binary(Node *node_typed, Node *lhs_typed, Node *rhs_typed) {
 }
 
 Node *add_type_to_node(Lvar *lvar_list, Node *node) {
-  #if 0
-  if (!node) {
-    error("nodeがNULLポインターです");
-  }
-  #endif
   switch (node->kind) {
     case ND_STMT: {
       Node typed_stmt_head;
@@ -180,7 +175,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         node->lhs = lhs;
         Node *typed_node = new_typed_node(lhs->type, node);
         // nodeの両辺のnodeを型ありnodeに付け替える
-        return new_typed_binary(typed_node, lhs, rhs);
+        return typed_node;
       } else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
         // そうでなければint同士の和差のはず
         ty->kind = TYPE_INT;

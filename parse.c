@@ -109,7 +109,7 @@ void init_func_declaration() {
   func_declaration_list = &func_declaration_tail;
 }
 
-void new_func_declaration(Type *type, char *name, int len) {
+void add_func_declaration(Type *type, char *name, int len) {
   FuncDeclaration *new_func_declaration = calloc(1, sizeof(FuncDeclaration));
   new_func_declaration->ret_type = type;
   new_func_declaration->name = calloc(len + 1, sizeof(char));
@@ -143,21 +143,30 @@ void program() {
   cur_func = &func_head;
   while (!at_eof()) {
     Type *func_type = specify_type();
-    Token *tok = token; // 関数名
+    Token *func_name_token = token; // 関数名
     token = token->next;
     expect(TK_RESERVED, "(");
-    // 関数定義または関数宣言
+    if (token->start[0] == ')' && token->next->start[0] == ';') { // 関数宣言の場合
+      char *func_name = calloc(func_name_token->len + 1, sizeof(char));
+      // 1個少なくmemcpyすることで最後のバイトがnull terminatorになる
+      memcpy(func_name, func_name_token->start, func_name_token->len);
+      add_func_declaration(func_type, func_name, func_name_token->len);
+      token = token->next->next;
+      continue;
+    }
+    // 関数定義
     {
       cur_func = cur_func->next = calloc(1, sizeof(Function));
       cur_func->type = func_type;
-      cur_func->name = calloc(tok->len + 1, sizeof(char));
-      memcpy(cur_func->name, tok->start, tok->len);
-      new_func_declaration(func_type, cur_func->name, tok->len);
+      cur_func->name = calloc(func_name_token->len + 1, sizeof(char));
+      memcpy(cur_func->name, func_name_token->start, func_name_token->len);
+      // 1個少なくmemcpyすることで最後のバイトがnull terminatorになる
+      add_func_declaration(func_type, cur_func->name, func_name_token->len);
     }
     // 引数
     {
       cur_func->params_head.next = NULL;
-      cur_func->params_head.name = NULL;
+      cur_func->params_head.name = "";
       cur_func->params_head.len = 0;
       cur_func->params_head.offset = 0;
       if (!consume(TK_RESERVED, ")")) {
@@ -176,9 +185,6 @@ void program() {
         expect(TK_RESERVED, ")");
       }
     }
-    if (consume(TK_RESERVED, ";")) { // 関数宣言
-      error("関数宣言は未対応です");
-    } else { // 関数定義
       expect(TK_RESERVED, "{");
       // ローカル変数
       Lvar lvar_tail;
@@ -194,6 +200,7 @@ void program() {
         memcpy(new_lvar->name, cur_param->name, cur_param->len);
         new_lvar->len = cur_param->len;
         new_lvar->offset = cur_param->offset;
+        new_lvar->type = cur_param->type;
         new_lvar->next = cur_func->locals;
         cur_func->locals = new_lvar;
       }
@@ -206,7 +213,6 @@ void program() {
         cur_stmt->body = stmt();
       }
       cur_func->body= head.next;
-      }
   }
   // 関数のリストの末端
   cur_func->next = NULL;
