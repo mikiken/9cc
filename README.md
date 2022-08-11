@@ -24,6 +24,8 @@ $ make test
 - function call and definition with up to 6 args
 - keyword `int`
 - pointer type
+- pointer add and sub
+- `sizeof` operator
 
 
 ## BNF
@@ -44,7 +46,7 @@ equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
-unary      = "+"? primary | "-"? primary | "*" unary | "&" unary
+unary      = "sizeof" unary | "+"? primary | "-"? primary | "*" unary | "&" unary
 primary    = num | ident args? | "(" expr ")"
 args       = "(" (expr ("," expr)*)? ")"
 ```

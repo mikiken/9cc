@@ -353,6 +353,11 @@ Node *mul() {
 }
 
 Node *unary() {
+  if (consume(TK_SIZEOF, "sizeof")) {
+    Node *node = new_node(ND_SIZEOF);
+    node->lhs = unary();
+    return node;
+  }
   if (consume(TK_RESERVED, "+"))
     return new_binary(ND_ADD, new_num(0), primary());
   if (consume(TK_RESERVED, "-"))

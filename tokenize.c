@@ -112,6 +112,12 @@ Token *tokenize() {
       continue;
     }
 
+    if (is_keyword(p, "sizeof")) {
+      cur = new_token(TK_SIZEOF, cur, p, p+5);
+      p += 6;
+      continue;
+    }
+
     if (is_ident_first(*p)) {
       char *start = p;
       do {

@@ -42,6 +42,7 @@ typedef enum {
   TK_WHILE,    // while
   TK_FOR,      // for
   TK_TYPE,     // 型
+  TK_SIZEOF,   // sizeof
 } TokenKind;
 
 typedef struct Token Token;
@@ -89,6 +90,7 @@ typedef enum {
   ND_FUNCALL,// function call
   ND_ADDR,   // &
   ND_DEREF,  // *(参照)
+  ND_SIZEOF, // sizeof 意味解析でND_NUMに置き換えられる
 } NodeKind;
 
 typedef struct Node Node;

@@ -1,4 +1,6 @@
 #include "9cc.h"
+#define SIZE_INT 4
+#define SIZE_PTR 8
 
 FuncDeclaration *find_declaration_by_name(char *name) {
   for (FuncDeclaration *declaration = func_declaration_list; declaration; declaration = declaration->next) {
@@ -96,6 +98,18 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       ty->ptr_to = lhs->type;
       return new_typed_binary(new_typed_node(ty, node), lhs, NULL);
     }
+    case ND_SIZEOF: {
+      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Type *ty = calloc(1, sizeof(Type));
+      ty->kind = TYPE_INT;
+      Node *size_node = new_node(ND_NUM);
+      if (lhs->type->kind == TYPE_INT) {
+        size_node->val = SIZE_INT;
+      } else { // TYPE_PTR
+        size_node->val = SIZE_PTR;
+      }
+      return new_typed_node(ty, size_node);
+    }
     case ND_RETURN: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Type *ty = calloc(1, sizeof(Type));
@@ -160,9 +174,9 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         size->kind = ND_NUM;
         size->type = size_ty;
         if (lhs->type->ptr_to->kind == TYPE_INT) {
-          size->val = 4; // int
+          size->val = SIZE_INT; // int
         } else {
-          size->val = 8;
+          size->val = SIZE_PTR;
         }
         Type *mul_ty = calloc(1, sizeof(Type));
         Node *multiply_offset = calloc(1, sizeof(Node));
