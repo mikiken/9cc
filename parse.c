@@ -61,11 +61,15 @@ Node *new_lvar_node(Type *type, Token *tok) {
   Lvar *lvar = find_lvar(tok);
   
   if (lvar != NULL) {
-    error_at(tok->start, "定義済みの変数を再定義することはできません");
+    error_at(tok->start, "定義済みの変数または配列を再定義することはできません");
   } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
-    lvar->offset = cur_func->locals->offset + 8;
+    if (cur_func->locals->type->kind == TYPE_ARRAY) {
+      lvar->offset = cur_func->locals->offset + cur_func->locals->type->array_size * 8;
+    } else {
+      lvar->offset = cur_func->locals->offset + 8;
+    }
     lvar->name = tok->start;
     lvar->type = type;
     lvar->next = cur_func->locals;
@@ -98,6 +102,15 @@ Type *specify_type() {
     ty->kind = TYPE_PTR;
     ty->ptr_to = type;
     type = ty;
+  }
+  if (token->next->start[0] == '[') {
+    Type *ty_array = calloc(1, sizeof(Type));
+    ty_array->kind = TYPE_ARRAY;
+    ty_array->ptr_to = type;
+    ty_array->array_size = token->next->next->val;
+    if (token->next->next->next->start[0] != ']')
+      error_at(token->next->next->next->start, "']'ではありません");
+    return ty_array;
   }
   return type;
 }
@@ -279,12 +292,17 @@ Node *stmt() {
 }
 
 Node *expr() {
-  Type *ty;
-  if ((ty = specify_type()) != NULL) {
-    Node *node = new_lvar_node(ty, token);
-
-    token = token->next;
-    return node;
+  Type *ty = specify_type();
+  if (ty != NULL) {
+    if (ty->kind == TYPE_ARRAY) { // 配列の場合
+      Node *node = new_lvar_node(ty, token);
+      token = token->next->next->next->next;
+      return node;
+    } else { // ローカル変数の宣言
+      Node *node = new_lvar_node(ty, token);
+      token = token->next;
+      return node;
+    }
   }
   return assign();
 }

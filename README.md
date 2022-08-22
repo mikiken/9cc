@@ -40,7 +40,7 @@ stmt       = expr ";"
            | "while" "(" expr ")" stmt
            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
            | "return" expr ";"
-expr       = assign | type ident
+expr       = assign | type ident("[" num "]")?
 assign     = equality ("=" assign)?
 equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*

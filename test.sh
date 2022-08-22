@@ -179,5 +179,9 @@ assert 8 'int main(){int *x; return sizeof(x);}'
 assert 8 'int main(){int *x; return sizeof x;}'
 assert 8 'int main(){int x; return sizeof(&x);}'
 
+# one-dimensional array
+# NOTE: 配列からポインタへの暗黙の型変換は未実装
+assert 3 'int main() {int a[2]; int *p; p = &a; *p = 1; *(p+1) = 2; return *p + *(p+1);}'
+
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

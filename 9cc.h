@@ -9,6 +9,7 @@ typedef enum {
   TYPE_NULL,
   TYPE_INT, // int
   TYPE_PTR, // pointer to ...
+  TYPE_ARRAY,
 } TypeKind;
 
 typedef struct Type Type;
@@ -16,6 +17,7 @@ typedef struct Type Type;
 struct Type {
   TypeKind kind; // 型の種類
   Type *ptr_to;  // kind == TYPE_PTR
+  int array_size;
 };
 
 typedef struct FuncDeclaration FuncDeclaration;

@@ -68,9 +68,14 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       if (return_lvar_type(lvar)->kind == TYPE_INT) {
         ty->kind = TYPE_INT;
         return new_typed_node(ty, node);
-      } else {
+      } else if (return_lvar_type(lvar)->kind == TYPE_PTR) {
         ty->kind = TYPE_PTR;
         ty->ptr_to = lvar->type->ptr_to;
+        return new_typed_node(ty, node);
+      } else if (return_lvar_type(lvar)->kind == TYPE_ARRAY) {
+        ty->kind = TYPE_ARRAY;
+        ty->ptr_to = lvar->type->ptr_to;
+        ty->array_size = lvar->type->array_size;
         return new_typed_node(ty, node);
       }
     }
