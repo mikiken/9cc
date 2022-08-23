@@ -45,6 +45,15 @@ Node *new_typed_binary(Node *node_typed, Node *lhs_typed, Node *rhs_typed) {
   return node_typed;
 }
 
+Node *cast_array_to_pointer(Node *array_node) {
+  Node *ref_to_array = new_node(ND_ADDR);
+  Type *ty_addr = calloc(1, sizeof(Type));
+  ty_addr->kind = TYPE_PTR;
+  ty_addr->ptr_to = array_node->type->ptr_to; // 配列の型はptr_toに入っている
+  ty_addr->array_size = array_node->type->array_size;
+  return new_typed_binary(new_typed_node(ty_addr, ref_to_array), array_node, NULL);
+}
+
 Node *add_type_to_node(Lvar *lvar_list, Node *node) {
   switch (node->kind) {
     case ND_STMT: {
@@ -82,6 +91,9 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     case ND_ASSIGN: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY) {
+        rhs = cast_array_to_pointer(rhs);
+      }
       if (lhs->type->kind != rhs->type->kind) {
         error("異なる型の変数を代入することはできません");
       }
@@ -91,6 +103,9 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     }
     case ND_DEREF: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+        lhs = cast_array_to_pointer(lhs);
+      }
       if (lhs->type->kind != TYPE_PTR) {
         error("ポインタでないものを間接参照することはできません");
       }
@@ -110,8 +125,13 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       Node *size_node = new_node(ND_NUM);
       if (lhs->type->kind == TYPE_INT) {
         size_node->val = SIZE_INT;
-      } else { // TYPE_PTR
+      } else if (lhs->type->kind == TYPE_PTR) {
         size_node->val = SIZE_PTR;
+      } else if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+        if (lhs->type->ptr_to->kind == TYPE_INT)
+          size_node->val = SIZE_INT * lhs->type->array_size;
+        else
+          size_node->val = SIZE_PTR * lhs->type->array_size;
       }
       return new_typed_node(ty, size_node);
     }
@@ -168,10 +188,13 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       return typed_node;
     }
     case ND_ADD:
-    case ND_SUB: { // 現状では左辺と右辺で型が違う場合はTYPR_PTRに合わせればいいはず
+    case ND_SUB: {
       Type *ty = calloc(1, sizeof(Type));
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+        lhs = cast_array_to_pointer(lhs);
+      }
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
         Type *size_ty = calloc(1, sizeof(Type));
         size_ty->kind = TYPE_INT;
@@ -179,7 +202,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         size->kind = ND_NUM;
         size->type = size_ty;
         if (lhs->type->ptr_to->kind == TYPE_INT) {
-          size->val = SIZE_INT; // int
+          size->val = SIZE_INT;
         } else {
           size->val = SIZE_PTR;
         }

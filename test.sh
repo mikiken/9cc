@@ -156,7 +156,7 @@ assert 5 'int main(){int x; int *y; x=3; y=&x; return *y+2;}'
 assert 3 'int main(){int x; x=3; return *&x; }'
 assert 3 'int main(){int x; int *y; int **z; x=3; y=&x; z=&y; return **z; }'
 assert 5 'int main(){int x; int *y; x=3; y=&x; *y=5; return x; }'
-# ↓未定義動作なのでコメントアウト
+# 未定義動作なのでコメントアウト
 #assert 5 'int main(){int x; int y; x=3; y=5; return *(&x-2); }'
 #assert 3 'int main(){int x; int y; x=3; y=5; return *(&y+2); }'
 #assert 7 'int main(){int x; int y; x=3; y=5; *(&x-2)=7; return y; }'
@@ -180,8 +180,13 @@ assert 8 'int main(){int *x; return sizeof x;}'
 assert 8 'int main(){int x; return sizeof(&x);}'
 
 # one-dimensional array
-# NOTE: 配列からポインタへの暗黙の型変換は未実装
-assert 3 'int main() {int a[2]; int *p; p = &a; *p = 1; *(p+1) = 2; return *p + *(p+1);}'
+assert 3 'int main(){int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *(p+1);}'
+assert 7 'int main() {int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1);}'
+assert 8 'int main() {int a; a = 2; int b[2]; int c; c = 3; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1) + c;}'
+assert 5 'int main(){int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}'
+assert 3 'int main() {int a[2]; *a = 1; *(a+1) = 2; int *p; p = a; return *p + *(p+1);}'
+assert 12 'int main(){int a[3]; return sizeof(a);}'
+assert 24 'int main(){int *a[3]; return sizeof(a);}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o
