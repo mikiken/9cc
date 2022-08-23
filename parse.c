@@ -403,13 +403,13 @@ Node *primary() {
 
   else if (token->kind == TK_IDENT) {
     Node *node;
-    Token *tok = token;
+    Token *ident = token;
     token = token->next;
 
     if (consume(TK_RESERVED, "(")) { // 関数呼び出しの場合
       node = new_node(ND_FUNCALL);
-      node->func_name = calloc(tok->len + 1, sizeof(char));
-      memcpy(node->func_name, tok->start, tok->len);
+      node->func_name = calloc(ident->len + 1, sizeof(char));
+      memcpy(node->func_name, ident->start, ident->len);
 
       if (!consume(TK_RESERVED, ")")) {
         Node head;
@@ -422,8 +422,15 @@ Node *primary() {
         node->expr = head.next;
       }
     }
+    else if (consume(TK_RESERVED, "[")) { // 配列の場合
+      node = new_node(ND_DEREF);
+      node->lhs = new_node(ND_ADD);
+      node->lhs->lhs = lvar_node(ident);
+      node->lhs->rhs = expr();
+      expect(TK_RESERVED, "]");
+    }
     else { // ローカル変数の場合
-      node = lvar_node(tok);
+      node = lvar_node(ident);
     }
     return node;
   }

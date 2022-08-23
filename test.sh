@@ -187,6 +187,9 @@ assert 5 'int main(){int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}'
 assert 3 'int main() {int a[2]; *a = 1; *(a+1) = 2; int *p; p = a; return *p + *(p+1);}'
 assert 12 'int main(){int a[3]; return sizeof(a);}'
 assert 24 'int main(){int *a[3]; return sizeof(a);}'
+assert 5 'int main(){int a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}'
+assert 3 'int main() {int num; num = 0; int a[2]; a[0] = 1; a[num+1] = 2; int *p; p = a; return *p + *(p+1);}'
+assert 7 'int main() {int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p + *(p+1);}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

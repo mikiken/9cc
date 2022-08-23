@@ -26,7 +26,7 @@ $ make test
 - pointer type
 - pointer add and sub
 - `sizeof` operator
-
+- one-dimensional array
 
 ## BNF
 ```
@@ -47,6 +47,7 @@ relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
 unary      = "sizeof" unary | "+"? primary | "-"? primary | "*" unary | "&" unary
-primary    = num | ident args? | "(" expr ")"
+primary    = num | ident post_fix? | "(" expr ")"
+post_fix   = "[" expr "]" | args?
 args       = "(" (expr ("," expr)*)? ")"
 ```
