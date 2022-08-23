@@ -66,9 +66,9 @@ Node *new_lvar_node(Type *type, Token *tok) {
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
     if (cur_func->locals->type->kind == TYPE_ARRAY) {
-      lvar->offset = cur_func->locals->offset + cur_func->locals->type->array_size * 8;
+      lvar->offset = cur_func->locals->offset + cur_func->locals->type->array_size * 12;
     } else {
-      lvar->offset = cur_func->locals->offset + 8;
+      lvar->offset = cur_func->locals->offset + 12;
     }
     lvar->name = tok->start;
     lvar->type = type;
