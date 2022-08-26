@@ -12,9 +12,8 @@ int main(int argc, char **argv) {
 
   token = tokenize();
   parse();
-  //Function f_head_typed = make_typed_ast(); // 型情報を付与する
   make_typed_ast();
-  codegen(func_head);
+  codegen();
 
   return 0;
 }

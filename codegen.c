@@ -19,7 +19,7 @@ void gen_addr(Node *node) {
   case ND_DEREF:
     gen(node->lhs);
     return;
- } 
+ }
 }
 
 void gen(Node *node) {
@@ -168,10 +168,10 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
-void codegen(Function f_head) {
+void codegen() {
   printf(".intel_syntax noprefix\n");
   // 先頭の関数から順にコード生成
-  for (Function *f = f_head.next; f; f = f->next) {
+  for (Function *f = func_head.next; f; f = f->next) {
     current_func = f;
     printf(".globl %s\n", f->name);
     printf("%s:\n", f->name);

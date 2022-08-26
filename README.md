@@ -22,6 +22,7 @@ $ make test
 - `while` `for` statement
 - `{…}` compound statements (blocks)
 - function call and definition with up to 6 args
+- function declaration without type checking
 - keyword `int`
 - pointer type
 - pointer add and sub
