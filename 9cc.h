@@ -37,17 +37,36 @@ FuncDeclaration func_declaration_tail;
 
 // トークンの種類
 typedef enum {
-  TK_RESERVED, // 記号
-  TK_IDENT,    // 識別子
-  TK_NUM,      // 整数トークン
-  TK_EOF,      // 入力の終わりを表すトークン
-  TK_RETURN,   // return
-  TK_IF,       // if
-  TK_ELSE,     // else
-  TK_WHILE,    // while
-  TK_FOR,      // for
-  TK_TYPE,     // 型
-  TK_SIZEOF,   // sizeof
+  TK_EQUAL,             // ==
+  TK_NOT_EQUAL,         // !=
+  TK_LESS_EQUAL,        // <=
+  TK_GREATER_EQUAL,     // >=
+  TK_LESS,              // <
+  TK_GREATER,           // >
+  TK_PLUS,              // +
+  TK_MINUS,             // -
+  TK_ASTERISK,          // *
+  TK_SLASH,             // /
+  TK_ASSIGN,            // =
+  TK_SEMICOLON,         // ;
+  TK_COMMA,             // ,
+  TK_AND,               // &
+  TK_LEFT_PARENTHESIS,  // (
+  TK_RIGHT_PARENTHESIS, // )
+  TK_LEFT_BRACE,        // {
+  TK_RIGHT_BRACE,       // }
+  TK_LEFT_BRACKET,      // [
+  TK_RIGHT_BRACKET,     // ]
+  TK_IDENT,             // 識別子
+  TK_NUM,               // 整数トークン
+  TK_EOF,               // 入力の終わりを表すトークン
+  TK_RETURN,            // return
+  TK_IF,                // if
+  TK_ELSE,              // else
+  TK_WHILE,             // while
+  TK_FOR,               // for
+  TK_INT,               // int 
+  TK_SIZEOF,            // sizeof
 } TokenKind;
 
 typedef struct Token Token;
@@ -69,8 +88,6 @@ Token *token;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
-
-bool at_eof();
 
 Token *tokenize();
 

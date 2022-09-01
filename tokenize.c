@@ -1,40 +1,21 @@
 #include "9cc.h"
-// エラーを報告するための関数
-// printfと同じ引数を取る
-void error(char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  exit(1);
-}
 
-void error_at(char *loc, char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-
-  int pos = loc - user_input; // エラー発生箇所が何文字目か計算
-  fprintf(stderr, "%s\n", user_input);
-  fprintf(stderr, "%*s", pos, " "); // pos個の空白を出力
-  fprintf(stderr, "^ ");
-  vfprintf(stderr, fmt, ap);
-  fprintf(stderr, "\n");
-  exit(1);
-}
-
-// 二項演算子が指定したものであるかチェック
+// 記号が指定したものであるか判定
 bool startswith(char *p, char *q) {
   return memcmp(p, q, strlen(q)) == 0;
 }
 
+//　文字列の最初の文字が識別子として適合するか判定
 bool is_ident_first(char c) {
   return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 
+// 文字列の途中の文字が識別子として適合するか判定
 bool is_ident(char c) {
   return is_ident_first(c) || ('0' <= c && c <= '9'); 
 }
 
+// 文字列が引数で指定したキーワードであるか判定
 bool is_keyword(char *p, char *keyword) {
   return strncmp(p, keyword, strlen(keyword)) == 0 && !is_ident(*(p + strlen(keyword)));
 }
@@ -50,7 +31,7 @@ Token *new_token(TokenKind kind, Token *cur, char *start, char*end) {
   return tok;
 }
 
-// 入力文字列pをトークナイズしてそれを返す
+// 入力文字列をトークナイズしてそれを返す
 Token *tokenize() {
   char *p = user_input;
   Token head;
@@ -64,14 +45,122 @@ Token *tokenize() {
       continue;
     }
 
-    if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
-      cur = new_token(TK_RESERVED, cur, p, p+1);
+    if (startswith(p, "==")) {
+      cur = new_token(TK_EQUAL, cur, p, p+1);
       p += 2;
       continue;
     }
 
-    if (strchr("<>+-*/()=;{},&[]", *p)) {
-      cur = new_token(TK_RESERVED, cur, p, p);
+    if (startswith(p, "!=")) {
+      cur = new_token(TK_NOT_EQUAL, cur, p, p+1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "<=")) {
+      cur = new_token(TK_LESS_EQUAL, cur, p, p+1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, ">=")) {
+      cur = new_token(TK_GREATER_EQUAL, cur, p, p+1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "<")) {
+      cur = new_token(TK_LESS, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, ">")) {
+      cur = new_token(TK_GREATER, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "+")) {
+      cur = new_token(TK_PLUS, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "-")) {
+      cur = new_token(TK_MINUS, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "*")) {
+      cur = new_token(TK_ASTERISK, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "/")) {
+      cur = new_token(TK_SLASH, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "=")) {
+      cur = new_token(TK_ASSIGN, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, ";")) {
+      cur = new_token(TK_SEMICOLON, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, ",")) {
+      cur = new_token(TK_COMMA, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "&")) {
+      cur = new_token(TK_AND, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "(")) {
+      cur = new_token(TK_LEFT_PARENTHESIS, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, ")")) {
+      cur = new_token(TK_RIGHT_PARENTHESIS, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "{")) {
+      cur = new_token(TK_LEFT_BRACE, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "}")) {
+      cur = new_token(TK_RIGHT_BRACE, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, "[")) {
+      cur = new_token(TK_LEFT_BRACKET, cur, p, p);
+      p++;
+      continue;
+    }
+    
+    if (startswith(p, "]")) {
+      cur = new_token(TK_RIGHT_BRACKET, cur, p, p);
       p++;
       continue;
     }
@@ -107,7 +196,7 @@ Token *tokenize() {
     }
 
     if (is_keyword(p, "int")) {
-      cur = new_token(TK_TYPE, cur, p, p+2);
+      cur = new_token(TK_INT, cur, p, p+2);
       p += 3;
       continue;
     }

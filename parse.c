@@ -8,14 +8,15 @@ Node *new_node(NodeKind kind) {
   return node;
 }
 
-Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_binary_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = new_node(kind);
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
 }
 
-Node *new_num(int val) {
+// 整数ノードを作成する
+Node *new_num_node(int val) {
   Node *node = new_node(ND_NUM);
   node->val = val;
   return node;
@@ -23,20 +24,19 @@ Node *new_num(int val) {
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
-bool consume(TokenKind kind, char *op) {
-  // (tokenが記号でない場合) || (指定されたopの長さがtokenの長さと等しくない場合) || (指定されたopとtokenが等しくない場合)
-  if (token->kind != kind || strlen(op) != token->len || memcmp(token->start, op, token->len))
+bool consume(Token *tok, TokenKind kind) {
+  if (tok->kind != kind)
     return false;
-  token = token->next;
+  *tok = *tok->next;
   return true;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
-void expect(TokenKind kind, char *op) {
-  if (token->kind != kind || strlen(op) != token->len || memcmp(token->start, op, token->len))
-    error_at(token->start, "'%s'ではありません", op);
-  token = token->next;
+void expect(Token *tok,TokenKind kind) {
+  if (token->kind != kind)
+    error_at(token->start, "予期されたトークンの種類ではありません");
+  *tok = *tok->next;
 }
 
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
@@ -93,11 +93,11 @@ Node *lvar_node(Token *tok) {
 }
 
 Type *specify_type() {
-  if (!consume(TK_TYPE, "int"))
+  if (!consume(token, TK_INT))
     return NULL;
   Type *type = calloc(1, sizeof(Type));
   type->kind = TYPE_INT;
-  while (consume(TK_RESERVED, "*")) {
+  while (consume(token, TK_ASTERISK)) {
     Type *ty = calloc(1, sizeof(Type));
     ty->kind = TYPE_PTR;
     ty->ptr_to = type;
@@ -158,7 +158,7 @@ void program() {
     Type *func_type = specify_type();
     Token *func_name_token = token; // 関数名
     token = token->next;
-    expect(TK_RESERVED, "(");
+    expect(token, TK_LEFT_PARENTHESIS);
     if (token->start[0] == ')' && token->next->start[0] == ';') { // 関数宣言の場合
       char *func_name = calloc(func_name_token->len + 1, sizeof(char));
       // 1個少なくmemcpyすることで最後のバイトがnull terminatorになる
@@ -182,7 +182,7 @@ void program() {
       cur_func->params_head.name = "";
       cur_func->params_head.len = 0;
       cur_func->params_head.offset = 0;
-      if (!consume(TK_RESERVED, ")")) {
+      if (!consume(token, TK_RIGHT_PARENTHESIS)) {
         Lvar *cur_param = &cur_func->params_head;
         do {
           cur_param->next = calloc(1, sizeof(Lvar));
@@ -193,12 +193,12 @@ void program() {
           cur_param->next->offset = cur_param->offset + 8;
           cur_param = cur_param->next;
           token = token->next;
-        } while (consume(TK_RESERVED, ","));
+        } while (consume(token, TK_COMMA));
         cur_param->next = NULL;
-        expect(TK_RESERVED, ")");
+        expect(token, TK_RIGHT_PARENTHESIS);
       }
     }
-      expect(TK_RESERVED, "{");
+      expect(token, TK_LEFT_BRACE);
       // ローカル変数
       Lvar lvar_tail;
       lvar_tail.len = 0;
@@ -221,7 +221,7 @@ void program() {
       cur_func->body = new_node(ND_STMT);
       Node head;
       Node *cur_stmt = &head;
-      while (!consume(TK_RESERVED, "}")) {
+      while (!consume(token, TK_RIGHT_BRACE)) {
         cur_stmt = cur_stmt->next = new_node(ND_STMT);
         cur_stmt->body = stmt();
       }
@@ -233,50 +233,50 @@ void program() {
 
 Node *stmt() {
   Node *node;
-  if (consume(TK_IF, "if")) {
+  if (consume(token, TK_IF)) {
     node = new_node(ND_IF);
-    expect(TK_RESERVED, "(");
+    expect(token, TK_LEFT_PARENTHESIS);
     node->cond = expr();
-    expect(TK_RESERVED, ")");
+    expect(token, TK_RIGHT_PARENTHESIS);
     node->then = stmt();
-    if (consume(TK_ELSE, "else"))
+    if (consume(token, TK_ELSE))
       node->els = stmt();
   }
 
-  else if (consume(TK_RETURN, "return")) {
+  else if (consume(token, TK_RETURN)) {
     node = new_node(ND_RETURN);
     node->lhs = expr();
-    expect(TK_RESERVED, ";");
+    expect(token, TK_SEMICOLON);
   }
 
-  else if (consume(TK_WHILE, "while")) {
+  else if (consume(token, TK_WHILE)) {
     node = new_node(ND_FOR);
-    expect(TK_RESERVED, "(");
+    expect(token, TK_LEFT_PARENTHESIS);
     node->cond = expr();
-    expect(TK_RESERVED, ")");
+    expect(token, TK_RIGHT_PARENTHESIS);
     node->then = stmt();
   }
 
-  else if (consume(TK_FOR, "for")) {
+  else if (consume(token, TK_FOR)) {
     node = new_node(ND_FOR);
-    expect(TK_RESERVED, "(");
+    expect(token, TK_LEFT_PARENTHESIS);
     if (*(token->start) != ';')
       node->init = expr();
-    expect(TK_RESERVED, ";");
+    expect(token, TK_SEMICOLON);
     if (*(token->start) != ';')
       node->cond = expr();
-    expect(TK_RESERVED, ";");
+    expect(token, TK_SEMICOLON);
     if (*(token->start) != ')')
       node->inc = expr();
-    expect(TK_RESERVED, ")");
+    expect(token, TK_RIGHT_PARENTHESIS);
     node->then = stmt();
   }
 
-  else if (consume(TK_RESERVED, "{")) {
+  else if (consume(token, TK_LEFT_BRACE)) {
     node = new_node(ND_STMT);
     Node head;
     Node *cur = &head;
-    while (!consume(TK_RESERVED, "}")) {
+    while (!consume(token, TK_RIGHT_BRACE)) {
       cur = cur->next = new_node(ND_STMT);
       cur->body = stmt();
     }
@@ -285,7 +285,7 @@ Node *stmt() {
   
   else {
     node = expr();
-    expect(TK_RESERVED, ";");
+    expect(token, TK_SEMICOLON);
   }
   
   return node;
@@ -309,8 +309,8 @@ Node *expr() {
 
 Node *assign() {
   Node *node = equality();
-  if (consume(TK_RESERVED, "="))
-    node = new_binary(ND_ASSIGN, node, assign());
+  if (consume(token, TK_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, assign());
   return node;
 }
 
@@ -318,10 +318,10 @@ Node *equality() {
   Node *node = relational();
 
   while (true) {
-    if (consume(TK_RESERVED, "=="))
-      node = new_binary(ND_EQ, node, relational());
-    else if (consume(TK_RESERVED, "!="))
-      node = new_binary(ND_NE, node, relational());
+    if (consume(token, TK_EQUAL))
+      node = new_binary_node(ND_EQ, node, relational());
+    else if (consume(token, TK_NOT_EQUAL))
+      node = new_binary_node(ND_NE, node, relational());
     else
       return node;
   }
@@ -331,14 +331,14 @@ Node *relational() {
   Node *node = add();
 
   while (true) {
-    if (consume(TK_RESERVED, "<"))
-      node = new_binary(ND_LT, node, add());
-    else if (consume(TK_RESERVED, "<="))
-      node = new_binary(ND_LE, node, add());
-    else if (consume(TK_RESERVED, ">"))
-      node = new_binary(ND_LT, add(), node);
-    else if (consume(TK_RESERVED, ">="))
-      node = new_binary(ND_LE, add(), node);
+    if (consume(token, TK_LESS))
+      node = new_binary_node(ND_LT, node, add());
+    else if (consume(token, TK_LESS_EQUAL))
+      node = new_binary_node(ND_LE, node, add());
+    else if (consume(token, TK_GREATER))
+      node = new_binary_node(ND_LT, add(), node);
+    else if (consume(token, TK_GREATER_EQUAL))
+      node = new_binary_node(ND_LE, add(), node);
     else
       return node;
   }
@@ -348,10 +348,10 @@ Node *add() {
   Node *node = mul();
 
   while (true) {
-    if (consume(TK_RESERVED, "+"))
-      node = new_binary(ND_ADD, node, mul());
-    else if (consume(TK_RESERVED, "-"))
-      node = new_binary(ND_SUB, node, mul());
+    if (consume(token, TK_PLUS))
+      node = new_binary_node(ND_ADD, node, mul());
+    else if (consume(token, TK_MINUS))
+      node = new_binary_node(ND_SUB, node, mul());
     else
       return node; // 数値のみの場合
   }
@@ -361,31 +361,31 @@ Node *mul() {
   Node *node = unary();
 
   while (true) {
-    if (consume(TK_RESERVED, "*"))
-      node = new_binary(ND_MUL, node, unary());
-    else if (consume(TK_RESERVED, "/"))
-      node = new_binary(ND_DIV, node, unary());
+    if (consume(token, TK_ASTERISK))
+      node = new_binary_node(ND_MUL, node, unary());
+    else if (consume(token, TK_SLASH))
+      node = new_binary_node(ND_DIV, node, unary());
     else
       return node; // 数値のみの場合
   }
 }
 
 Node *unary() {
-  if (consume(TK_SIZEOF, "sizeof")) {
+  if (consume(token, TK_SIZEOF)) {
     Node *node = new_node(ND_SIZEOF);
     node->lhs = unary();
     return node;
   }
-  if (consume(TK_RESERVED, "+"))
-    return new_binary(ND_ADD, new_num(0), primary());
-  if (consume(TK_RESERVED, "-"))
-    return new_binary(ND_SUB, new_num(0), primary());
-  if (consume(TK_RESERVED, "*")) {
+  if (consume(token, TK_PLUS))
+    return new_binary_node(ND_ADD, new_num_node(0), primary());
+  if (consume(token, TK_MINUS))
+    return new_binary_node(ND_SUB, new_num_node(0), primary());
+  if (consume(token, TK_ASTERISK)) {
     Node *node = new_node(ND_DEREF);
     node->lhs = unary();
     return node;
   }
-  if (consume(TK_RESERVED, "&")) {
+  if (consume(token, TK_AND)) {
     Node *node = new_node(ND_ADDR);
     node->lhs = unary();
     return node;
@@ -395,9 +395,9 @@ Node *unary() {
 
 Node *primary() {
   // 次のトークンが"("なら、"(" expr ")"のはず
-  if (consume(TK_RESERVED, "(")) {
+  if (consume(token, TK_LEFT_PARENTHESIS)) {
     Node *node = expr();
-    expect(TK_RESERVED, ")");
+    expect(token, TK_RIGHT_PARENTHESIS);
     return node;
   }
 
@@ -406,28 +406,28 @@ Node *primary() {
     Token *ident = token;
     token = token->next;
 
-    if (consume(TK_RESERVED, "(")) { // 関数呼び出しの場合
+    if (consume(token, TK_LEFT_PARENTHESIS)) { // 関数呼び出しの場合
       node = new_node(ND_FUNCALL);
       node->func_name = calloc(ident->len + 1, sizeof(char));
       memcpy(node->func_name, ident->start, ident->len);
 
-      if (!consume(TK_RESERVED, ")")) {
+      if (!consume(token, TK_RIGHT_PARENTHESIS)) {
         Node head;
         Node *cur = &head;
         do {
           cur = cur->next = new_node(ND_EXPR);
           cur->body = expr();
-        } while (consume(TK_RESERVED, ","));
-        expect(TK_RESERVED, ")");
+        } while (consume(token, TK_COMMA));
+        expect(token, TK_RIGHT_PARENTHESIS);
         node->expr = head.next;
       }
     }
-    else if (consume(TK_RESERVED, "[")) { // 配列の場合
+    else if (consume(token, TK_LEFT_BRACKET)) { // 配列の場合
       node = new_node(ND_DEREF);
       node->lhs = new_node(ND_ADD);
       node->lhs->lhs = lvar_node(ident);
       node->lhs->rhs = expr();
-      expect(TK_RESERVED, "]");
+      expect(token, TK_RIGHT_BRACKET);
     }
     else { // ローカル変数の場合
       node = lvar_node(ident);
@@ -436,5 +436,5 @@ Node *primary() {
   }
 
   else
-    return new_num(expect_number()); // それ以外は整数のはず
+    return new_num_node(expect_number()); // それ以外は整数のはず
 }
