@@ -1,6 +1,4 @@
 #include "9cc.h"
-#define SIZE_INT 4
-#define SIZE_PTR 8
 
 FuncDeclaration *find_declaration_by_name(char *name) {
   for (FuncDeclaration *declaration = func_declaration_list; declaration; declaration = declaration->next) {
@@ -202,7 +200,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         size->kind = ND_NUM;
         size->type = size_ty;
         if (lhs->type->ptr_to->kind == TYPE_INT) {
-          size->val = SIZE_INT;
+          size->val = 8; // 現状intを8byteとして扱っているため
         } else {
           size->val = SIZE_PTR;
         }

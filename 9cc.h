@@ -20,6 +20,9 @@ struct Type {
   int array_size;
 };
 
+#define SIZE_INT 4
+#define SIZE_PTR 8
+
 typedef struct FuncDeclaration FuncDeclaration;
 
 struct FuncDeclaration {
