@@ -88,6 +88,7 @@ Token *token;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+void unexpected_symbol_error(char *loc, TokenKind kind);
 
 Token *tokenize();
 
@@ -95,24 +96,24 @@ Token *tokenize();
 typedef enum {
   ND_STMT,
   ND_EXPR,
-  ND_ADD,    // +
-  ND_SUB,    // -
-  ND_MUL,    // *
-  ND_DIV,    // /
-  ND_EQ,     // ==
-  ND_NE,     // !=
-  ND_LT,     // <
-  ND_LE,     // <=
-  ND_ASSIGN, // =
-  ND_NUM,    // 整数
-  ND_LVAR,   // ローカル変数
-  ND_RETURN, // return
-  ND_IF,     // if
-  ND_FOR,    // for | while
-  ND_FUNCALL,// function call
-  ND_ADDR,   // &
-  ND_DEREF,  // *(参照)
-  ND_SIZEOF, // sizeof 意味解析でND_NUMに置き換えられる
+  ND_ADD,     // +
+  ND_SUB,     // -
+  ND_MUL,     // *
+  ND_DIV,     // /
+  ND_EQ,      // ==
+  ND_NE,      // !=
+  ND_LT,      // <
+  ND_LE,      // <=
+  ND_ASSIGN,  // =
+  ND_NUM,     // 整数
+  ND_LVAR,    // ローカル変数
+  ND_RETURN,  // return
+  ND_IF,      // if
+  ND_FOR,     // for | while
+  ND_FUNCALL, // function call
+  ND_ADDR,    // &
+  ND_DEREF,   // *(参照)
+  ND_SIZEOF,  // sizeof 意味解析でND_NUMに置き換えられる
 } NodeKind;
 
 typedef struct Node Node;
@@ -144,7 +145,7 @@ typedef struct Lvar Lvar;
 
 struct Lvar {
   Lvar *next; // 次の変数またはNULL
-  Type *type;  // 型
+  Type *type; // 型
   char *name; // 変数の名前
   int len;    // 名前の文字数
   int offset; // RBPからのオフセット
@@ -154,7 +155,7 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
-  Type *type;        // 型
+  Type *type;       // 型
   char *name;       // 関数名
   Lvar params_head; // 引数リストの先頭
   Node *body;       // statement

@@ -22,30 +22,54 @@ Node *new_num_node(int val) {
   return node;
 }
 
-// 次のトークンが期待している記号のときには、トークンを1つ読み進めて
-// 真を返す。それ以外の場合には偽を返す。
+// トークンを任意の個数読み進める
+void skip_token(Token *tok, int count) {
+  for (int i = 0; i < count; i++)
+    *tok = *tok->next;
+}
+
+// トークンを1つ読み進める
+void next_token(Token *tok) {
+  skip_token(tok, 1);
+}
+
+// トークンが期待している記号のときには、真を返して
+// トークンを1つ読み進める。それ以外の場合には偽を返す。
 bool consume(Token *tok, TokenKind kind) {
   if (tok->kind != kind)
     return false;
-  *tok = *tok->next;
+  next_token(tok);
+  return true;
+}
+
+// トークンが期待している記号であるか判定
+bool consume_nostep(Token *tok, TokenKind kind) {
+  if (tok->kind != kind)
+    return false;
   return true;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(Token *tok,TokenKind kind) {
-  if (token->kind != kind)
-    error_at(token->start, "予期されたトークンの種類ではありません");
-  *tok = *tok->next;
+  if (tok->kind != kind)
+    unexpected_symbol_error(tok->start, kind);
+  next_token(tok);
+}
+
+// 次のトークンが期待しているトークンでなければエラーを報告する
+void expect_nostep(Token *tok,TokenKind kind) {
+  if (tok->kind != kind)
+    unexpected_symbol_error(tok->start, kind);
 }
 
 // 次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
 // それ以外の場合にはエラーを報告する。
-int expect_number() {
-  if (token->kind != TK_NUM)
-    error_at(token->start, "数ではありません");
-  int val = token->val;
-  token = token->next;
+int expect_number(Token *tok) {
+  if (tok->kind != TK_NUM)
+    error_at(tok->start, "数ではありません");
+  int val = tok->val;
+  *tok = *tok->next;
   return val;
 }
 
@@ -92,24 +116,26 @@ Node *lvar_node(Token *tok) {
   return node;
 }
 
-Type *specify_type() {
-  if (!consume(token, TK_INT))
+Type *parse_type(Token *tok) {
+  if (!consume(tok, TK_INT))
     return NULL;
   Type *type = calloc(1, sizeof(Type));
   type->kind = TYPE_INT;
-  while (consume(token, TK_ASTERISK)) {
+  while (consume(tok, TK_ASTERISK)) {
     Type *ty = calloc(1, sizeof(Type));
     ty->kind = TYPE_PTR;
     ty->ptr_to = type;
     type = ty;
   }
-  if (token->next->start[0] == '[') {
+  tok = tok->next; // 識別子を読み飛ばす
+  if (consume_nostep(tok, TK_LEFT_BRACKET)) {
+    tok = tok->next; // tokを数字に進める
     Type *ty_array = calloc(1, sizeof(Type));
     ty_array->kind = TYPE_ARRAY;
     ty_array->ptr_to = type;
-    ty_array->array_size = token->next->next->val;
-    if (token->next->next->next->start[0] != ']')
-      error_at(token->next->next->next->start, "']'ではありません");
+    ty_array->array_size = tok->val;
+    tok = tok->next; // tokを]に進める
+    expect_nostep(tok, TK_RIGHT_BRACKET);
     return ty_array;
   }
   return type;
@@ -122,17 +148,67 @@ void init_func_declaration() {
   func_declaration_list = &func_declaration_tail;
 }
 
-void add_func_declaration(Type *type, char *name, int len) {
-  FuncDeclaration *new_func_declaration = calloc(1, sizeof(FuncDeclaration));
-  new_func_declaration->ret_type = type;
-  new_func_declaration->name = calloc(len + 1, sizeof(char));
-  memcpy(new_func_declaration->name, name, len);
-  new_func_declaration->len = len;
-  new_func_declaration->next = func_declaration_list;
-  func_declaration_list = new_func_declaration;
+void new_func_declaration(Type *func_type, Token *func_name) {
+  FuncDeclaration *func_dec = calloc(1, sizeof(FuncDeclaration));
+  func_dec->ret_type = func_type;
+  func_dec->name = calloc(func_name->len + 1, sizeof(char));
+  memcpy(func_dec->name, func_name->start, func_name->len);
+  func_dec->len = func_name->len;
+  func_dec->next = func_declaration_list;
+  func_declaration_list = func_dec;
 }
 
-bool at_eof() {
+void new_func_definition(Type *func_type, Token *func_name) {
+  cur_func = cur_func->next = calloc(1, sizeof(Function));
+  cur_func->type = func_type;
+  cur_func->name = calloc(func_name->len + 1, sizeof(char));
+  memcpy(cur_func->name, func_name->start, func_name->len);
+  new_func_declaration(func_type, func_name);
+  // ローカル変数
+  Lvar lvar_tail;
+  lvar_tail.len = 0;
+  lvar_tail.name = NULL;
+  lvar_tail.next = NULL;
+  lvar_tail.offset = 0;
+  cur_func->locals = &lvar_tail;
+}
+
+void parse_parameter(Function *func, Token *tok) {
+  cur_func->params_head.next = NULL;
+  cur_func->params_head.name = "";
+  cur_func->params_head.len = 0;
+  cur_func->params_head.offset = 0;
+  if (!consume(tok, TK_RIGHT_PARENTHESIS)) {
+    Lvar *cur_param = &cur_func->params_head;
+    do {
+      cur_param->next = calloc(1, sizeof(Lvar));
+      cur_param->next->type = parse_type(tok); // parameterの型
+      cur_param->next->name = calloc(tok->len + 1, sizeof(char));
+      memcpy(cur_param->next->name, tok->start, tok->len);
+      cur_param->next->len = tok->len;
+      cur_param->next->offset = cur_param->offset + 8;
+      cur_param = cur_param->next;
+      next_token(tok);
+    } while (consume(tok, TK_COMMA));
+    cur_param->next = NULL;
+    expect(tok, TK_RIGHT_PARENTHESIS);
+  }
+
+  // パラメータをローカル変数にコピー
+  // TODO: 以下の処理をまとめた関数を作る
+  for (Lvar *cur_param = cur_func->params_head.next; cur_param; cur_param = cur_param->next) {
+    Lvar *new_lvar = calloc(1, sizeof(Lvar));
+    new_lvar->name = calloc(cur_param->len + 1, sizeof(char));
+    memcpy(new_lvar->name, cur_param->name, cur_param->len);
+    new_lvar->len = cur_param->len;
+    new_lvar->offset = cur_param->offset;
+    new_lvar->type = cur_param->type;
+    new_lvar->next = cur_func->locals;
+    cur_func->locals = new_lvar;
+  }
+}
+
+bool is_eof() {
   return token->kind == TK_EOF;
 }
 
@@ -154,71 +230,24 @@ void parse() {
 
 void program() {
   cur_func = &func_head;
-  while (!at_eof()) {
-    Type *func_type = specify_type();
-    Token *func_name_token = token; // 関数名
-    token = token->next;
+  while (!is_eof()) {
+    Type *func_type = parse_type(token);
+    Token func_name = *token; // 関数名
+    next_token(token);
     expect(token, TK_LEFT_PARENTHESIS);
-    if (token->start[0] == ')' && token->next->start[0] == ';') { // 関数宣言の場合
-      char *func_name = calloc(func_name_token->len + 1, sizeof(char));
-      // 1個少なくmemcpyすることで最後のバイトがnull terminatorになる
-      memcpy(func_name, func_name_token->start, func_name_token->len);
-      add_func_declaration(func_type, func_name, func_name_token->len);
-      token = token->next->next;
-      continue;
+
+    // 関数宣言の場合、宣言を記録し読み飛ばす
+    if (consume_nostep(token, TK_RIGHT_PARENTHESIS) && consume_nostep(token->next, TK_SEMICOLON)) {
+      new_func_declaration(func_type, &func_name);
+      skip_token(token, 2);
     }
-    // 関数定義
-    {
-      cur_func = cur_func->next = calloc(1, sizeof(Function));
-      cur_func->type = func_type;
-      cur_func->name = calloc(func_name_token->len + 1, sizeof(char));
-      memcpy(cur_func->name, func_name_token->start, func_name_token->len);
-      // 1個少なくmemcpyすることで最後のバイトがnull terminatorになる
-      add_func_declaration(func_type, cur_func->name, func_name_token->len);
-    }
-    // 引数
-    {
-      cur_func->params_head.next = NULL;
-      cur_func->params_head.name = "";
-      cur_func->params_head.len = 0;
-      cur_func->params_head.offset = 0;
-      if (!consume(token, TK_RIGHT_PARENTHESIS)) {
-        Lvar *cur_param = &cur_func->params_head;
-        do {
-          cur_param->next = calloc(1, sizeof(Lvar));
-          cur_param->next->type = specify_type(); // parameterの型
-          cur_param->next->name = calloc(token->len + 1, sizeof(char));
-          memcpy(cur_param->next->name, token->start, token->len);
-          cur_param->next->len = token->len;
-          cur_param->next->offset = cur_param->offset + 8;
-          cur_param = cur_param->next;
-          token = token->next;
-        } while (consume(token, TK_COMMA));
-        cur_param->next = NULL;
-        expect(token, TK_RIGHT_PARENTHESIS);
-      }
-    }
+
+    // 関数定義の場合
+    else {    
+      new_func_definition(func_type, &func_name);
+      parse_parameter(cur_func, token); // 引数
       expect(token, TK_LEFT_BRACE);
-      // ローカル変数
-      Lvar lvar_tail;
-      lvar_tail.len = 0;
-      lvar_tail.name = NULL;
-      lvar_tail.next = NULL;
-      lvar_tail.offset = 0;
-      cur_func->locals = &lvar_tail;
-      // パラメータをローカル変数にコピー
-      for ( Lvar *cur_param = cur_func->params_head.next; cur_param; cur_param = cur_param->next) {
-        Lvar *new_lvar = calloc(1, sizeof(Lvar));
-        new_lvar->name = calloc(cur_param->len + 1, sizeof(char));
-        memcpy(new_lvar->name, cur_param->name, cur_param->len);
-        new_lvar->len = cur_param->len;
-        new_lvar->offset = cur_param->offset;
-        new_lvar->type = cur_param->type;
-        new_lvar->next = cur_func->locals;
-        cur_func->locals = new_lvar;
-      }
-      // statement
-      cur_func->body = new_node(ND_STMT);
+      cur_func->body = new_node(ND_STMT); // statement
       Node head;
       Node *cur_stmt = &head;
       while (!consume(token, TK_RIGHT_BRACE)) {
@@ -226,6 +255,7 @@ void program() {
         cur_stmt->body = stmt();
       }
       cur_func->body= head.next;
+    }
   }
   // 関数のリストの末端
   cur_func->next = NULL;
@@ -292,15 +322,17 @@ Node *stmt() {
 }
 
 Node *expr() {
-  Type *ty = specify_type();
+  Type *ty = parse_type(token);
   if (ty != NULL) {
-    if (ty->kind == TYPE_ARRAY) { // 配列の場合
+    // 配列の場合
+    if (ty->kind == TYPE_ARRAY) {
       Node *node = new_lvar_node(ty, token);
-      token = token->next->next->next->next;
+      skip_token(token, 4);
       return node;
-    } else { // ローカル変数の宣言
+    // 通常の変数の場合
+    } else {
       Node *node = new_lvar_node(ty, token);
-      token = token->next;
+      next_token(token);
       return node;
     }
   }
@@ -436,5 +468,5 @@ Node *primary() {
   }
 
   else
-    return new_num_node(expect_number()); // それ以外は整数のはず
+    return new_num_node(expect_number(token)); // それ以外は整数のはず
 }
