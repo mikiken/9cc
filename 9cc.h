@@ -81,10 +81,7 @@ struct Token {
 };
 
 // 入力プログラム
-extern char *user_input;
-
-// 現在着目しているトークン
-Token *token;
+char *user_input;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);

@@ -1,6 +1,4 @@
 #include "9cc.h"
-// 入力プログラムを定義(宣言は9cc.h)
-char *user_input;
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -10,8 +8,8 @@ int main(int argc, char **argv) {
 
   user_input = argv[1];
 
-  token = tokenize();
-  parse();
+  Token *tok = tokenize(user_input);
+  parse(tok);
   make_typed_ast();
   codegen();
 

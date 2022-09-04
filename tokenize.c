@@ -32,7 +32,7 @@ Token *new_token(TokenKind kind, Token *cur, char *start, char*end) {
 }
 
 // 入力文字列をトークナイズしてそれを返す
-Token *tokenize() {
+Token *tokenize(char *user_input) {
   char *p = user_input;
   Token head;
   head.next = NULL;
