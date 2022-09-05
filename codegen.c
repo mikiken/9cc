@@ -1,8 +1,5 @@
 #include "9cc.h"
 
-#define INT_SIZE 4
-#define PTR_SIZE 8
-
 int label_count;
 char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 Function *current_func;
@@ -168,10 +165,10 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
-void codegen() {
+void codegen(Function *typed_func_list) {
   printf(".intel_syntax noprefix\n");
   // 先頭の関数から順にコード生成
-  for (Function *f = func_head.next; f; f = f->next) {
+  for (Function *f = typed_func_list; f; f = f->next) {
     current_func = f;
     printf(".globl %s\n", f->name);
     printf("%s:\n", f->name);

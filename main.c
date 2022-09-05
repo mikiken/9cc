@@ -9,9 +9,9 @@ int main(int argc, char **argv) {
   user_input = argv[1];
 
   Token *tok = tokenize(user_input);
-  parse(tok);
-  make_typed_ast();
-  codegen();
+  Function *func_list = parse(tok);
+  add_type_to_ast(func_list);
+  codegen(func_list);
 
   return 0;
 }

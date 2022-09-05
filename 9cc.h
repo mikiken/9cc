@@ -5,34 +5,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SIZE_INT 4
+#define SIZE_PTR 8
+
+// 型の種類
 typedef enum {
   TYPE_NULL,
-  TYPE_INT, // int
-  TYPE_PTR, // pointer to ...
-  TYPE_ARRAY,
+  TYPE_INT,   // int
+  TYPE_PTR,   // pointer to ...
+  TYPE_ARRAY, // 配列型
 } TypeKind;
 
 typedef struct Type Type;
 
 struct Type {
-  TypeKind kind; // 型の種類
-  Type *ptr_to;  // kind == TYPE_PTR
-  int array_size;
+  TypeKind kind;  // 型の種類
+  Type *ptr_to;   // kind == TYPE_PTR || TYPE_ARRAY のとき使用
+  int array_size; // 配列の要素数
 };
-
-#define SIZE_INT 4
-#define SIZE_PTR 8
 
 typedef struct FuncDeclaration FuncDeclaration;
 
 struct FuncDeclaration {
-  FuncDeclaration *next;
-  Type *ret_type;  // return type
-  char *name;  // 関数名
-  int len;     // 関数名の長さ
+  FuncDeclaration *next; // 次の関数宣言
+  Type *ret_type;        // return type
+  char *name;            // 関数名
+  int len;               // 関数名の長さ
 };
 
-FuncDeclaration *func_declaration_list; // 宣言のリスト
+FuncDeclaration *func_declaration_list; // 関数宣言のリスト
 FuncDeclaration func_declaration_tail;
 
 // トークンの種類
@@ -159,9 +160,7 @@ struct Function {
   Lvar *locals;     // ローカル変数のリスト
 };
 
-Function func_head; // 関数のリストの先頭
-
-void parse();
+Function *parse(Token *tok);
 Node *new_node(NodeKind kind);
-void make_typed_ast();
-void codegen();
+void add_type_to_ast(Function *func_list);
+void codegen(Function *typed_func_list);

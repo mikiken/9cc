@@ -218,7 +218,7 @@ bool is_eof(Token *tok) {
   return tok->kind == TK_EOF;
 }
 
-void program();
+Function *program();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -229,12 +229,13 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-void parse(Token *tok) {
+Function *parse(Token *tok) {
   init_func_declaration();
-  program(tok);
+  return program(tok);
 }
 
-void program(Token *tok) {
+Function *program(Token *tok) {
+  Function func_head;
   cur_func = &func_head;
   while (!is_eof(tok)) {
     Type *func_type = parse_type(tok); // 関数の返り値の型
@@ -265,6 +266,7 @@ void program(Token *tok) {
   }
   // 関数のリストの末端
   cur_func->next = NULL;
+  return func_head.next;
 }
 
 Node *stmt(Token *tok) {
@@ -296,13 +298,13 @@ Node *stmt(Token *tok) {
   else if (consume(tok, TK_FOR)) {
     node = new_node(ND_FOR);
     expect(tok, TK_LEFT_PARENTHESIS);
-    if (*(tok->start) != ';')
+    if (!consume_nostep(tok, TK_SEMICOLON))
       node->init = expr(tok);
     expect(tok, TK_SEMICOLON);
-    if (*(tok->start) != ';')
+    if (!consume_nostep(tok, TK_SEMICOLON))
       node->cond = expr(tok);
     expect(tok, TK_SEMICOLON);
-    if (*(tok->start) != ')')
+    if (!consume_nostep(tok, TK_RIGHT_PARENTHESIS))
       node->inc = expr(tok);
     expect(tok, TK_RIGHT_PARENTHESIS);
     node->then = stmt(tok);

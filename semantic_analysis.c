@@ -258,8 +258,8 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
 
 // parseして得られたASTに型情報を付与する
 // 深さ優先探索で下りながら再帰的に呼び出す
-void make_typed_ast() {
-  for (Function *f = func_head.next; f; f = f->next) {
+void add_type_to_ast(Function *func_list) {
+  for (Function *f = func_list; f; f = f->next) {
     f->body = add_type_to_node(f->locals, f->body); // 型付きASTを構築
   }
 }
