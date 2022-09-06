@@ -6,3 +6,4 @@ a.out
 9cc
 .vscode/*
 .gdb_history
+peda-session-*.txt

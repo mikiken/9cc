@@ -73,31 +73,31 @@ int expect_number(Token *tok) {
   return val;
 }
 
-Lvar *find_lvar(Token *tok) {
-  for (Lvar *var = cur_func->locals; var != NULL; var = var->next)
+Lvar *find_lvar(Function *func, Token *tok) {
+  for (Lvar *var = func->locals; var != NULL; var = var->next)
     if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
       return var;
   return NULL;
 }
 
-Node *new_lvar_node(Type *type, Token *tok) {
+Node *new_lvar_node(Function *func, Type *type, Token *tok) {
   Node *node = new_node(ND_LVAR);
-  Lvar *lvar = find_lvar(tok);
+  Lvar *lvar = find_lvar(func, tok);
   
   if (lvar != NULL) {
     error_at(tok->start, "定義済みの変数または配列を再定義することはできません");
   } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
-    if (cur_func->locals->type->kind == TYPE_ARRAY) {
-      lvar->offset = cur_func->locals->offset + cur_func->locals->type->array_size * 8;
+    if (func->locals->type->kind == TYPE_ARRAY) {
+      lvar->offset = func->locals->offset + func->locals->type->array_size * 8;
     } else {
-      lvar->offset = cur_func->locals->offset + 8;
+      lvar->offset = func->locals->offset + 8;
     }
     lvar->name = tok->start;
     lvar->type = type;
-    lvar->next = cur_func->locals;
-    cur_func->locals = lvar;
+    lvar->next = func->locals;
+    func->locals = lvar;
     
     node->offset = lvar->offset;
   }
@@ -106,7 +106,7 @@ Node *new_lvar_node(Type *type, Token *tok) {
 
 Node *lvar_node(Token *tok) {
   Node *node = new_node(ND_LVAR);
-  Lvar *lvar = find_lvar(tok);
+  Lvar *lvar = find_lvar(cur_func, tok);
 
   if (lvar == NULL) {
     error_at(tok->start, "未定義の変数です");
@@ -148,6 +148,17 @@ void init_func_declaration() {
   func_declaration_list = &func_declaration_tail;
 }
 
+void init_lvar_list(Function *func) {
+  Lvar *lvar_tail = calloc(1, sizeof(Lvar));
+  lvar_tail->next = NULL;
+  lvar_tail->name = "";
+  lvar_tail->len = 0;
+  lvar_tail->offset = 0;
+  lvar_tail->type = calloc(1, sizeof(Type)); // lvar_tailに型情報を付与
+  lvar_tail->type->kind = TYPE_NULL;
+  func->locals = lvar_tail;
+}
+
 void new_func_declaration(Type *func_type, Token *func_name) {
   FuncDeclaration *func_dec = calloc(1, sizeof(FuncDeclaration));
   func_dec->ret_type = func_type;
@@ -164,13 +175,7 @@ void new_func_definition(Type *func_type, Token *func_name) {
   cur_func->name = calloc(func_name->len + 1, sizeof(char));
   memcpy(cur_func->name, func_name->start, func_name->len);
   new_func_declaration(func_type, func_name);
-  // ローカル変数
-  Lvar lvar_tail;
-  lvar_tail.len = 0;
-  lvar_tail.name = NULL;
-  lvar_tail.next = NULL;
-  lvar_tail.offset = 0;
-  cur_func->locals = &lvar_tail;
+  init_lvar_list(cur_func);
 }
 
 // 関数の引数をローカル変数にコピー
@@ -209,9 +214,9 @@ void parse_parameter(Function *func, Token *tok) {
       next_token(tok);
     } while (consume(tok, TK_COMMA));
     cur_param->next = NULL;
+    copy_param_to_lvar(func); // 引数をローカル変数としてコピー
     expect(tok, TK_RIGHT_PARENTHESIS);
   }
-  copy_param_to_lvar(func);
 }
 
 bool is_eof(Token *tok) {
@@ -334,12 +339,12 @@ Node *expr(Token *tok) {
   if (ty != NULL) {
     // 配列の場合
     if (ty->kind == TYPE_ARRAY) {
-      Node *node = new_lvar_node(ty, tok);
+      Node *node = new_lvar_node(cur_func, ty, tok);
       skip_token(tok, 4);
       return node;
     // 通常の変数の場合
     } else {
-      Node *node = new_lvar_node(ty, tok);
+      Node *node = new_lvar_node(cur_func, ty, tok);
       next_token(tok);
       return node;
     }
