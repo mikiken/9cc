@@ -200,7 +200,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         size->kind = ND_NUM;
         size->type = size_ty;
         if (lhs->type->ptr_to->kind == TYPE_INT) {
-          size->val = 8; // 現状intを8byteとして扱っているため
+          size->val = SIZE_INT;
         } else {
           size->val = SIZE_PTR;
         }
