@@ -64,27 +64,6 @@ char *reg_name(int reg_kind, int size) {
   }
 }
 
-#if 0
-char *arg_reg_name(int arg_count, int size) {
-  switch (arg_count) {
-    case 1:
-      return reg_name(RDI, size);
-    case 2:
-      return reg_name(RSI, size);
-    case 3:
-      return reg_name(RDX, size);
-    case 4:
-      return reg_name(RCX, size);
-    case 5:
-      return reg_name(R8, size);
-    case 6:
-      return reg_name(R9, size);
-    default:
-      error("引数7個以上の関数呼び出しには現在対応していません");
-      return;
-  }
-}
-#else
 int arg_reg_kind(int arg_count) {
   switch (arg_count) {
     case 1:
@@ -103,16 +82,13 @@ int arg_reg_kind(int arg_count) {
       error("引数7個以上の関数呼び出しには現在対応していません");
   }
 }
-#endif
 
 void push(Type *type, int src_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      //printf("  push eax\n");
       printf("  push %s\n", reg_name(src_reg, 4));
       return;
-    case TYPE_PTR: // これいらんかも
-      printf("  push rax\n");
+    case TYPE_PTR:
       printf("  push %s\n",reg_name(src_reg, 8));
       return;
     default:
@@ -124,11 +100,9 @@ void push(Type *type, int src_reg) {
 void pop(Type *type, int dest_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      //printf("  pop eax\n");
       printf("  pop %s\n", reg_name(dest_reg, 4));
       return;
-    case TYPE_PTR: // これいらんかも
-      //printf("  pop rax\n");
+    case TYPE_PTR:
       printf("  pop %s\n", reg_name(dest_reg, 8));
       return;
     default:
@@ -148,11 +122,9 @@ void push_immediate_value(int val) {
 void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      //printf("  mov eax, DWORD PTR [rdi]\n"); // rdiの参照先の値がint(4byte)なので2ワード
       printf("  mov %s, DWORD PTR [%s]\n", reg_name(dest_reg, 4), reg_name(src_reg, 8));
       return;
     case TYPE_PTR:
-      //printf("  mov rax, [rdi]\n");
       printf("  mov %s, [%s]\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
       return;
     default:
@@ -164,11 +136,9 @@ void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
 void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      //printf("  mov DWORD PTR [rdi], eax\n"); // int型なのでrdiの参照先の領域の下位4byteにeaxの値を代入する
       printf("  mov DWORD PTR [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, 4));
       return;
     case TYPE_PTR:
-      //printf("  mov [rdi], rax\n");
       printf("  mov [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
       return;
     default:
