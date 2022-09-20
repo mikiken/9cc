@@ -84,31 +84,39 @@ int arg_reg_kind(int arg_count) {
 }
 
 void push(Type *type, int src_reg) {
-  switch (type->kind) {
-    case TYPE_INT:
-      printf("  push %s\n", reg_name(src_reg, 4));
-      return;
-    case TYPE_PTR:
-      printf("  push %s\n",reg_name(src_reg, 8));
-      return;
-    default:
-      error("非対応のデータサイズです");
-      return;
-  }
+  #if 0
+    switch (type->kind) {
+      case TYPE_INT:
+        printf("  push %s\n", reg_name(src_reg, 8));
+        return;
+      case TYPE_PTR:
+        printf("  push %s\n",reg_name(src_reg, 8));
+        return;
+      default:
+        error("push: 非対応のデータサイズです");
+        return;
+    }
+  #else
+    printf("  push %s\n", reg_name(src_reg, 8));
+  #endif
 }
 
 void pop(Type *type, int dest_reg) {
-  switch (type->kind) {
-    case TYPE_INT:
-      printf("  pop %s\n", reg_name(dest_reg, 4));
-      return;
-    case TYPE_PTR:
-      printf("  pop %s\n", reg_name(dest_reg, 8));
-      return;
-    default:
-      error("非対応のデータサイズです");
-      return;
-  }
+  #if 0
+    switch (type->kind) {
+      case TYPE_INT:
+        printf("  pop %s\n", reg_name(dest_reg, 8));
+        return;
+      case TYPE_PTR:
+        printf("  pop %s\n", reg_name(dest_reg, 8));
+        return;
+      default:
+        error("pop: 非対応のデータサイズです");
+        return;
+    }
+  #else
+    printf("  pop %s\n", reg_name(dest_reg, 8));
+  #endif
 }
 
 void pop_addr(int dest_reg) {
@@ -128,6 +136,7 @@ void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
       printf("  mov %s, [%s]\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
       return;
     default:
+      //mov_memory_to_register(type->ptr_to, dest_reg, src_reg);
       error("レジスタに値をセットできませんでした");
       return;
   }
@@ -148,16 +157,17 @@ void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
 }
 
 void pass_argument_to_register(Lvar *arg, int arg_count) {
-    printf("  lea rdi, [rbp-%d]\n", arg->offset); // アドレスは8バイト
-    mov_register_to_memory(arg->type, RDI, arg_reg_kind(arg_count));
+    printf("  lea rax, [rbp-%d]\n", arg->offset); // アドレスは8バイト
+    mov_register_to_memory(arg->type, RAX, arg_reg_kind(arg_count));
 }
 
 void gen_prologue(Function *func) {
   printf("  push rbp\n");     // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
-  if (func->locals->offset)
-    printf("  sub rsp, %d\n", func->locals->offset);
+  // TODO: lvar_listの末尾が配列型の場合の処理を追記する
+  if (func->lvar_list->offset)
+    printf("  sub rsp, %d\n", func->lvar_list->offset);
 }
 
 void gen_epilogue(Function *func) {
@@ -261,7 +271,7 @@ void gen_expr(Node *node) {
       gen_expr(node->rhs);                          // 右辺の値を生成
       pop(node->type, RAX);                         // 右辺の値をraxにpop
       pop_addr(RDI);                                // 左辺のアドレスをrdiにpop
-      mov_register_to_memory(node->type, RAX, RDI); // rdiの参照先にraxの値を代入する
+      mov_register_to_memory(node->type, RDI, RAX); // rdiの参照先にraxの値を代入する
       push(node->type, RAX);
       return;
     case ND_DEREF:
@@ -275,16 +285,16 @@ void gen_expr(Node *node) {
       return;
     case ND_FUNCALL: {
       int arg_count = 0;
-      Type *arg_type[6]; // 現状引数6つまでの関数呼び出しにのみ対応しているため要素数は6でよい
+      Type arg_type[6]; // 現状引数6つまでの関数呼び出しにのみ対応しているため要素数は6でよい
       for (Node *n = node->expr; n; n = n->next) {
         gen_expr(n->body);
-        arg_type[arg_count++];
+        arg_type[arg_count++] = *n->body->type;
       }
       if (arg_count > 6)
         error("7個以上の引数をもつ関数呼び出しは現在対応していません\n");
 
-      for (int i = arg_count - 1; i >= 0; i--)
-        pop(arg_type[arg_count], arg_reg_kind(arg_count));
+      for (int i = arg_count; i > 0; i--)
+        pop(&arg_type[i-1], arg_reg_kind(i));
       printf("  call %s\n", node->func_name);
       push(node->type, RAX); // callした関数の返り値をスタックトップに積む
       return;
@@ -294,40 +304,40 @@ void gen_expr(Node *node) {
   gen_expr(node->lhs);
   gen_expr(node->rhs);
 
-  pop(node->rhs->type, RDX);
+  pop(node->rhs->type, RBX);
   pop(node->lhs->type, RAX);
 
   switch (node->kind) {
     case ND_ADD:
-      printf("  add rax, rdx\n");
+      printf("  add %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       break;
     case ND_SUB:
-      printf("  sub rax, rdx\n");
+      printf("  sub %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       break;
     case ND_MUL:
-      printf("  imul rax, rdx\n");
+      printf("  imul %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       break;
     case ND_DIV:
-      printf("  cqo\n");
-      printf("  idiv rdx\n");
+      printf("  cqo\n"); // rdx:raxとして128bit整数に拡張
+      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       break;
     case ND_EQ:
-      printf("  cmp rax, rdx\n");
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  sete al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_NE:
-      printf("  cmp rax, rdx\n");
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setne al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_LT:
-      printf("  cmp rax, rdx\n");
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setl al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_LE:
-      printf("  cmp rax, rdx\n");
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setle al\n");
       printf("  movzb rax, al\n");
       break;

@@ -72,10 +72,47 @@ int expect_number(Token *tok) {
 }
 
 Lvar *find_lvar(Function *func, Token *tok) {
-  for (Lvar *var = func->locals; var != NULL; var = var->next)
+  for (Lvar *var = func->lvar_list; var != NULL; var = var->next)
     if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
       return var;
   return NULL;
+}
+
+int base_type_size(Type *type) {
+  switch (type->kind) {
+    case TYPE_INT:
+      return SIZE_INT;
+    case TYPE_PTR:
+      return SIZE_PTR;
+    default:
+      error("未対応の型です");
+  }
+}
+
+int lvar_offset(int cur_offset, int size) {
+  if (cur_offset - cur_offset / 8 * 8 + size <= 8)
+    return cur_offset + size;
+  else
+    return (cur_offset / size + 1) * size + size;
+}
+
+int calc_lvar_offset(Lvar *lvar_list, Type *type) {
+  int cur_offset = 0;
+  if (lvar_list->type->kind == TYPE_ARRAY)
+    cur_offset = lvar_list->offset + base_type_size(lvar_list->type->ptr_to) * (lvar_list->type->array_size - 1);
+  else
+    cur_offset = lvar_list->offset;
+    
+  switch (type->kind) {
+    case TYPE_INT:
+      return lvar_offset(cur_offset, SIZE_INT);
+    case TYPE_PTR:
+      return lvar_offset(cur_offset, SIZE_PTR);
+    case TYPE_ARRAY:
+      return lvar_offset(cur_offset, base_type_size(type->ptr_to));
+    default:
+      error("未対応の型です");
+  }
 }
 
 Node *new_lvar_node(Function *func, Type *type, Token *tok) {
@@ -87,15 +124,11 @@ Node *new_lvar_node(Function *func, Type *type, Token *tok) {
   } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
-    if (func->locals->type->kind == TYPE_ARRAY) {
-      lvar->offset = func->locals->offset + func->locals->type->array_size * 8;
-    } else {
-      lvar->offset = func->locals->offset + 8;
-    }
+    lvar->offset = calc_lvar_offset(func->lvar_list, type);
     lvar->name = tok->start;
     lvar->type = type;
-    lvar->next = func->locals;
-    func->locals = lvar;
+    lvar->next = func->lvar_list;
+    func->lvar_list = lvar;
     
     node->offset = lvar->offset;
   }
@@ -114,11 +147,20 @@ Node *lvar_node(Function *func, Token *tok) {
   return node;
 }
 
+Type *parse_base_type(Token *tok) {
+  Type *base_type = calloc(1, sizeof(Type));
+  if (consume(tok, TK_INT)) {
+    base_type->kind = TYPE_INT;
+  } else {
+    base_type->kind = TYPE_NULL;
+  }
+  return base_type;
+}
+
 Type *parse_type(Token *tok) {
-  if (!consume(tok, TK_INT))
+  Type *type = parse_base_type(tok);
+  if (type->kind == TYPE_NULL)
     return NULL;
-  Type *type = calloc(1, sizeof(Type));
-  type->kind = TYPE_INT;
   while (consume(tok, TK_ASTERISK)) {
     Type *ty = calloc(1, sizeof(Type));
     ty->kind = TYPE_PTR;
@@ -159,7 +201,7 @@ void init_lvar_list(Function *func) {
   lvar_tail->offset = 0;
   lvar_tail->type = calloc(1, sizeof(Type)); // lvar_tailに型情報を付与
   lvar_tail->type->kind = TYPE_NULL;
-  func->locals = lvar_tail;
+  func->lvar_list = lvar_tail;
 }
 
 void new_func_declaration(Type *func_type, Token *func_name) {
@@ -191,8 +233,8 @@ void copy_param_to_lvar(Function *func) {
     new_lvar->len = cur_param->len;
     new_lvar->offset = cur_param->offset;
     new_lvar->type = cur_param->type;
-    new_lvar->next = func->locals;
-    func->locals = new_lvar;
+    new_lvar->next = func->lvar_list;
+    func->lvar_list = new_lvar;
   }
 }
 
@@ -213,7 +255,7 @@ void parse_parameter(Function *func, Token *tok) {
       cur_param->next->name = calloc(tok->len + 1, sizeof(char));
       memcpy(cur_param->next->name, tok->start, tok->len);
       cur_param->next->len = tok->len;
-      cur_param->next->offset = cur_param->offset + 8;
+      cur_param->next->offset = cur_param->offset + 4;
       cur_param = cur_param->next;
       next_token(tok);
     } while (consume(tok, TK_COMMA));
@@ -341,17 +383,14 @@ Node *stmt(Function *func, Token *tok) {
 Node *expr(Function *func, Token *tok) {
   Type *ty = parse_type(tok);
   if (ty != NULL) {
+    Node *node = new_lvar_node(func, ty, tok);
     // 配列の場合
-    if (ty->kind == TYPE_ARRAY) {
-      Node *node = new_lvar_node(func, ty, tok);
+    if (ty->kind == TYPE_ARRAY)
       skip_token(tok, 4);
-      return node;
     // 通常の変数の場合
-    } else {
-      Node *node = new_lvar_node(func, ty, tok);
+    else
       next_token(tok);
-      return node;
-    }
+    return node;
   }
   return assign(func, tok);
 }

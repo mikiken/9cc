@@ -157,7 +157,7 @@ struct Function {
   char *name;       // 関数名
   Lvar params_head; // 引数リストの先頭
   Node *body;       // statement
-  Lvar *locals;     // ローカル変数のリスト
+  Lvar *lvar_list;     // ローカル変数のリスト
 };
 
 Function *parse(Token *tok);

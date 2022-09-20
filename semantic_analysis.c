@@ -176,7 +176,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     case ND_FUNCALL: {
       // 引数
       for (Node *n = node->expr; n; n = n->next) {
-        add_type_to_node(lvar_list, n->body);
+        n->body = add_type_to_node(lvar_list, n->body);
       }
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
       if (declaration == NULL) {
@@ -260,7 +260,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
 // 深さ優先探索で下りながら再帰的に呼び出す
 void add_type_to_ast(Function *func_list) {
   for (Function *f = func_list; f; f = f->next) {
-    f->body = add_type_to_node(f->locals, f->body); // 型付きASTを構築
+    f->body = add_type_to_node(f->lvar_list, f->body); // 型付きASTを構築
   }
 }
 
