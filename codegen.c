@@ -84,39 +84,11 @@ int arg_reg_kind(int arg_count) {
 }
 
 void push(Type *type, int src_reg) {
-  #if 0
-    switch (type->kind) {
-      case TYPE_INT:
-        printf("  push %s\n", reg_name(src_reg, 8));
-        return;
-      case TYPE_PTR:
-        printf("  push %s\n",reg_name(src_reg, 8));
-        return;
-      default:
-        error("push: 非対応のデータサイズです");
-        return;
-    }
-  #else
-    printf("  push %s\n", reg_name(src_reg, 8));
-  #endif
+  printf("  push %s\n", reg_name(src_reg, 8));
 }
 
 void pop(Type *type, int dest_reg) {
-  #if 0
-    switch (type->kind) {
-      case TYPE_INT:
-        printf("  pop %s\n", reg_name(dest_reg, 8));
-        return;
-      case TYPE_PTR:
-        printf("  pop %s\n", reg_name(dest_reg, 8));
-        return;
-      default:
-        error("pop: 非対応のデータサイズです");
-        return;
-    }
-  #else
-    printf("  pop %s\n", reg_name(dest_reg, 8));
-  #endif
+  printf("  pop %s\n", reg_name(dest_reg, 8));
 }
 
 void pop_addr(int dest_reg) {
@@ -157,17 +129,22 @@ void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
 }
 
 void pass_argument_to_register(Lvar *arg, int arg_count) {
-    printf("  lea rax, [rbp-%d]\n", arg->offset); // アドレスは8バイト
-    mov_register_to_memory(arg->type, RAX, arg_reg_kind(arg_count));
+  printf("  lea rax, [rbp-%d]\n", arg->offset); // アドレスは8バイト
+  mov_register_to_memory(arg->type, RAX, arg_reg_kind(arg_count));
 }
 
 void gen_prologue(Function *func) {
   printf("  push rbp\n");     // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
-  // TODO: lvar_listの末尾が配列型の場合の処理を追記する
-  if (func->lvar_list->offset)
-    printf("  sub rsp, %d\n", func->lvar_list->offset);
+  // スタック領域の末尾に配列が来た場合は、配列全体の大きさをoffsetに反映させる
+  int offset = 0;
+  if (func->lvar_list->type->kind == TYPE_ARRAY)
+    offset = func->lvar_list->offset + base_type_size(func->lvar_list->type->ptr_to) * (func->lvar_list->type->array_size - 1);
+  else
+    offset = func->lvar_list->offset;
+  if (offset)
+    printf("  sub rsp, %d\n", offset);
 }
 
 void gen_epilogue(Function *func) {
@@ -259,6 +236,8 @@ void gen_expr(Node *node) {
   switch (node->kind) {
     case ND_NUM:
       push_immediate_value(node->val);
+      return;
+    case ND_LVARDEF:
       return;
     case ND_LVAR:
       gen_addr(node);                               // 変数のアドレスをスタックにpush

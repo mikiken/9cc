@@ -69,6 +69,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       ty->kind = TYPE_INT;
       return new_typed_node(ty, node);
     }
+    case ND_LVARDEF:
     case ND_LVAR: {
       Lvar *lvar = find_lvar_by_offset(lvar_list, node->offset);
       Type *ty = calloc(1, sizeof(Type));

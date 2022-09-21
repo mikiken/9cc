@@ -115,8 +115,8 @@ int calc_lvar_offset(Lvar *lvar_list, Type *type) {
   }
 }
 
-Node *new_lvar_node(Function *func, Type *type, Token *tok) {
-  Node *node = new_node(ND_LVAR);
+Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
+  Node *node = new_node(ND_LVARDEF);
   Lvar *lvar = find_lvar(func, tok);
   
   if (lvar != NULL) {
@@ -383,7 +383,7 @@ Node *stmt(Function *func, Token *tok) {
 Node *expr(Function *func, Token *tok) {
   Type *ty = parse_type(tok);
   if (ty != NULL) {
-    Node *node = new_lvar_node(func, ty, tok);
+    Node *node = new_lvar_definition(func, ty, tok);
     // 配列の場合
     if (ty->kind == TYPE_ARRAY)
       skip_token(tok, 4);

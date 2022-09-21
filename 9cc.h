@@ -24,17 +24,15 @@ struct Type {
   int array_size; // 配列の要素数
 };
 
-typedef struct FuncDeclaration FuncDeclaration;
+typedef struct Lvar Lvar;
 
-struct FuncDeclaration {
-  FuncDeclaration *next; // 次の関数宣言
-  Type *ret_type;        // return type
-  char *name;            // 関数名
-  int len;               // 関数名の長さ
+struct Lvar {
+  Lvar *next; // 次の変数またはNULL
+  Type *type; // 型
+  char *name; // 変数の名前
+  int len;    // 名前の文字数
+  int offset; // RBPからのオフセット
 };
-
-FuncDeclaration *func_declaration_list; // 関数宣言のリスト
-FuncDeclaration func_declaration_tail;
 
 // トークンの種類
 typedef enum {
@@ -81,15 +79,6 @@ struct Token {
   int len;        // トークンの長さ
 };
 
-// 入力プログラム
-char *user_input;
-
-void error(char *fmt, ...);
-void error_at(char *loc, char *fmt, ...);
-void unexpected_symbol_error(char *loc, TokenKind kind);
-
-Token *tokenize();
-
 // 抽象構文木のノードの種類
 typedef enum {
   ND_STMT,
@@ -104,6 +93,7 @@ typedef enum {
   ND_LE,      // <=
   ND_ASSIGN,  // =
   ND_NUM,     // 整数
+  ND_LVARDEF, // ローカル変数の定義
   ND_LVAR,    // ローカル変数
   ND_RETURN,  // return
   ND_IF,      // if
@@ -139,14 +129,13 @@ struct Node {
   Node *expr;
 };
 
-typedef struct Lvar Lvar;
+typedef struct FuncDeclaration FuncDeclaration;
 
-struct Lvar {
-  Lvar *next; // 次の変数またはNULL
-  Type *type; // 型
-  char *name; // 変数の名前
-  int len;    // 名前の文字数
-  int offset; // RBPからのオフセット
+struct FuncDeclaration {
+  FuncDeclaration *next; // 次の関数宣言
+  Type *ret_type;        // return type
+  char *name;            // 関数名
+  int len;               // 関数名の長さ
 };
 
 typedef struct Function Function;
@@ -160,7 +149,20 @@ struct Function {
   Lvar *lvar_list;     // ローカル変数のリスト
 };
 
-Function *parse(Token *tok);
+// 入力プログラム
+char *user_input;
+
+FuncDeclaration *func_declaration_list; // 関数宣言のリスト
+FuncDeclaration func_declaration_tail;
+
+void error(char *fmt, ...);
+void error_at(char *loc, char *fmt, ...);
+void unexpected_symbol_error(char *loc, TokenKind kind);
+
 Node *new_node(NodeKind kind);
+int base_type_size(Type *type);
+
+Function *parse(Token *tok);
+Token *tokenize(char *user_input);
 void add_type_to_ast(Function *func_list);
 void codegen(Function *typed_func_list);

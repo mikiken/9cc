@@ -193,19 +193,22 @@ assert 8 'int main(){int *x; return sizeof(x);}'
 assert 8 'int main(){int *x; return sizeof x;}'
 assert 8 'int main(){int x; return sizeof(&x);}'
 
-<< COMMENTOUT
 # 1次元配列
-assert 3 'int main(){int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *(p+1);}'
+assert 3 'int main() {int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *(p+1);}'
 assert 8 'int main() {int a; a = 2; int b[2]; int c; c = 3; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1) + c;}'
-assert 5 'int main(){int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}'
+assert 5 'int main() {int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}'
 assert 3 'int main() {int a[2]; *a = 1; *(a+1) = 2; int *p; p = a; return *p + *(p+1);}'
 assert 12 'int main(){int a[3]; return sizeof(a);}'
 assert 24 'int main(){int *a[3]; return sizeof(a);}'
-assert 5 'int main(){int a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}'
+assert 5 'int main() {int a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}'
 assert 3 'int main() {int num; num = 0; int a[2]; a[0] = 1; a[num+1] = 2; int *p; p = a; return *p + *(p+1);}'
 assert 7 'int main() {int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p + *(p+1);}'
-assert 4 'int main() {int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 2; return a;}' # => 2 になる
-assert 21 'int fibonacci(int n){int fib[10]; fib[0] = 1; fib[1] = 1; int i; for(i=2;i<10;i = i+1){fib[i] = fib[i-1]+fib[i-2];} return fib[n];} int main() {return fibonacci(8);}' # セグフォ
+
+<< COMMENTOUT
+# バグってるテストケース
+assert 5 'int plus2(int *x) {return x + 2;} int main() {int x; x = 3; return plus2(&x);}'
+assert 4 'int main() {int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}' # => 3 になる
+assert 21 'int fibonacci(int n){int fib[10]; fib[0] = 1; fib[1] = 1; int i; for(i=2;i<10;i = i+1){fib[i] = fib[i-1]+fib[i-2];} return fib[n];} int main() {return fibonacci(8);}'
 COMMENTOUT
 
 echo OK
