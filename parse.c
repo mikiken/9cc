@@ -240,6 +240,8 @@ void copy_param_to_lvar(Function *func) {
 
 Lvar *init_params_head(Function *func) {
   func->params_head.next = NULL;
+  func->params_head.type = calloc(1, sizeof(Type));
+  func->params_head.type->kind = TYPE_NULL;
   func->params_head.name = "";
   func->params_head.len = 0;
   func->params_head.offset = 0;
@@ -255,7 +257,7 @@ void parse_parameter(Function *func, Token *tok) {
       cur_param->next->name = calloc(tok->len + 1, sizeof(char));
       memcpy(cur_param->next->name, tok->start, tok->len);
       cur_param->next->len = tok->len;
-      cur_param->next->offset = cur_param->offset + 4;
+      cur_param->next->offset = calc_lvar_offset(cur_param, cur_param->next->type);
       cur_param = cur_param->next;
       next_token(tok);
     } while (consume(tok, TK_COMMA));

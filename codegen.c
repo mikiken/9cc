@@ -108,7 +108,6 @@ void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
       printf("  mov %s, [%s]\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
       return;
     default:
-      //mov_memory_to_register(type->ptr_to, dest_reg, src_reg);
       error("レジスタに値をセットできませんでした");
       return;
   }
@@ -143,8 +142,10 @@ void gen_prologue(Function *func) {
     offset = func->lvar_list->offset + base_type_size(func->lvar_list->type->ptr_to) * (func->lvar_list->type->array_size - 1);
   else
     offset = func->lvar_list->offset;
-  if (offset)
+  if (offset) {
+    offset = (offset / 16 + 1)* 16;
     printf("  sub rsp, %d\n", offset);
+  }
 }
 
 void gen_epilogue(Function *func) {
