@@ -97,19 +97,13 @@ int lvar_offset(int cur_offset, int size) {
 }
 
 int calc_lvar_offset(Lvar *lvar_list, Type *type) {
-  int cur_offset = 0;
-  if (lvar_list->type->kind == TYPE_ARRAY)
-    cur_offset = lvar_list->offset + base_type_size(lvar_list->type->ptr_to) * (lvar_list->type->array_size - 1);
-  else
-    cur_offset = lvar_list->offset;
-    
   switch (type->kind) {
     case TYPE_INT:
-      return lvar_offset(cur_offset, SIZE_INT);
+      return lvar_offset(lvar_list->offset, SIZE_INT);
     case TYPE_PTR:
-      return lvar_offset(cur_offset, SIZE_PTR);
+      return lvar_offset(lvar_list->offset, SIZE_PTR);
     case TYPE_ARRAY:
-      return lvar_offset(cur_offset, base_type_size(type->ptr_to));
+      return lvar_offset(lvar_list->offset, base_type_size(type->ptr_to)) + base_type_size(type->ptr_to) * (type->array_size - 1);
     default:
       error("未対応の型です");
   }

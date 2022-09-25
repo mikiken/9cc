@@ -136,12 +136,7 @@ void gen_prologue(Function *func) {
   printf("  push rbp\n");     // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
-  // スタック領域の末尾に配列が来た場合は、配列全体の大きさをoffsetに反映させる
-  int offset = 0;
-  if (func->lvar_list->type->kind == TYPE_ARRAY)
-    offset = func->lvar_list->offset + base_type_size(func->lvar_list->type->ptr_to) * (func->lvar_list->type->array_size - 1);
-  else
-    offset = func->lvar_list->offset;
+  int offset = func->lvar_list->offset;
   if (offset) {
     offset = (offset / 16 + 1)* 16;
     printf("  sub rsp, %d\n", offset);
