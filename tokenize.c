@@ -12,7 +12,7 @@ bool is_ident_first(char c) {
 
 // 文字列の途中の文字が識別子として適合するか判定
 bool is_ident(char c) {
-  return is_ident_first(c) || ('0' <= c && c <= '9'); 
+  return is_ident_first(c) || ('0' <= c && c <= '9');
 }
 
 // 文字列が引数で指定したキーワードであるか判定
@@ -21,7 +21,7 @@ bool is_keyword(char *p, char *keyword) {
 }
 
 // 新しいトークンを作成してcurに繋げる
-Token *new_token(TokenKind kind, Token *cur, char *start, char*end) {
+Token *new_token(TokenKind kind, Token *cur, char *start, char *end) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind;
   tok->start = start;
@@ -46,25 +46,25 @@ Token *tokenize(char *user_input) {
     }
 
     if (startswith(p, "==")) {
-      cur = new_token(TK_EQUAL, cur, p, p+1);
+      cur = new_token(TK_EQUAL, cur, p, p + 1);
       p += 2;
       continue;
     }
 
     if (startswith(p, "!=")) {
-      cur = new_token(TK_NOT_EQUAL, cur, p, p+1);
+      cur = new_token(TK_NOT_EQUAL, cur, p, p + 1);
       p += 2;
       continue;
     }
 
     if (startswith(p, "<=")) {
-      cur = new_token(TK_LESS_EQUAL, cur, p, p+1);
+      cur = new_token(TK_LESS_EQUAL, cur, p, p + 1);
       p += 2;
       continue;
     }
 
     if (startswith(p, ">=")) {
-      cur = new_token(TK_GREATER_EQUAL, cur, p, p+1);
+      cur = new_token(TK_GREATER_EQUAL, cur, p, p + 1);
       p += 2;
       continue;
     }
@@ -158,7 +158,7 @@ Token *tokenize(char *user_input) {
       p++;
       continue;
     }
-    
+
     if (startswith(p, "]")) {
       cur = new_token(TK_RIGHT_BRACKET, cur, p, p);
       p++;
@@ -166,43 +166,43 @@ Token *tokenize(char *user_input) {
     }
 
     if (is_keyword(p, "if")) {
-      cur = new_token(TK_IF, cur, p, p+1);
+      cur = new_token(TK_IF, cur, p, p + 1);
       p += 2;
       continue;
     }
 
     if (is_keyword(p, "else")) {
-      cur = new_token(TK_ELSE, cur, p, p+3);
+      cur = new_token(TK_ELSE, cur, p, p + 3);
       p += 4;
       continue;
     }
 
     if (is_keyword(p, "while")) {
-      cur = new_token(TK_WHILE, cur, p, p+4);
+      cur = new_token(TK_WHILE, cur, p, p + 4);
       p += 5;
       continue;
     }
 
     if (is_keyword(p, "for")) {
-      cur = new_token(TK_FOR, cur, p, p+2);
+      cur = new_token(TK_FOR, cur, p, p + 2);
       p += 3;
       continue;
     }
 
     if (is_keyword(p, "return")) {
-      cur = new_token(TK_RETURN, cur, p, p+5);
+      cur = new_token(TK_RETURN, cur, p, p + 5);
       p += 6;
       continue;
     }
 
     if (is_keyword(p, "int")) {
-      cur = new_token(TK_INT, cur, p, p+2);
+      cur = new_token(TK_INT, cur, p, p + 2);
       p += 3;
       continue;
     }
 
     if (is_keyword(p, "sizeof")) {
-      cur = new_token(TK_SIZEOF, cur, p, p+5);
+      cur = new_token(TK_SIZEOF, cur, p, p + 5);
       p += 6;
       continue;
     }

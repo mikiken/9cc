@@ -6,4 +6,5 @@ a.out
 9cc
 .vscode/*
 .gdb_history
+.clang-format
 peda-session-*.txt

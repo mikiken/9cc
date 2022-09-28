@@ -49,14 +49,14 @@ bool consume_nostep(Token *tok, TokenKind kind) {
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
-void expect(Token *tok,TokenKind kind) {
+void expect(Token *tok, TokenKind kind) {
   if (tok->kind != kind)
     unexpected_symbol_error(tok->start, kind);
   next_token(tok);
 }
 
 // 次のトークンが期待しているトークンでなければエラーを報告する
-void expect_nostep(Token *tok,TokenKind kind) {
+void expect_nostep(Token *tok, TokenKind kind) {
   if (tok->kind != kind)
     unexpected_symbol_error(tok->start, kind);
 }
@@ -112,10 +112,11 @@ int calc_lvar_offset(Lvar *lvar_list, Type *type) {
 Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
   Node *node = new_node(ND_LVARDEF);
   Lvar *lvar = find_lvar(func, tok);
-  
+
   if (lvar != NULL) {
     error_at(tok->start, "定義済みの変数または配列を再定義することはできません");
-  } else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
+  }
+  else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Lvar));
     lvar->len = tok->len;
     lvar->offset = calc_lvar_offset(func->lvar_list, type);
@@ -123,7 +124,7 @@ Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
     lvar->type = type;
     lvar->next = func->lvar_list;
     func->lvar_list = lvar;
-    
+
     node->offset = lvar->offset;
   }
   return node;
@@ -135,7 +136,8 @@ Node *lvar_node(Function *func, Token *tok) {
 
   if (lvar == NULL) {
     error_at(tok->start, "未定義の変数です");
-  } else {
+  }
+  else {
     node->offset = lvar->offset;
   }
   return node;
@@ -145,7 +147,8 @@ Type *parse_base_type(Token *tok) {
   Type *base_type = calloc(1, sizeof(Type));
   if (consume(tok, TK_INT)) {
     base_type->kind = TYPE_INT;
-  } else {
+  }
+  else {
     base_type->kind = TYPE_NULL;
   }
   return base_type;
@@ -287,7 +290,7 @@ Function *program(Token *tok) {
   Function *cur_func = func_head;
   while (!is_eof(tok)) {
     Type *func_type = parse_type(tok); // 関数の返り値の型
-    Token func_name = *tok; // 関数名
+    Token func_name = *tok;            // 関数名
     next_token(tok);
     expect(tok, TK_LEFT_PARENTHESIS);
 
@@ -298,7 +301,7 @@ Function *program(Token *tok) {
     }
 
     // 関数定義の場合
-    else {    
+    else {
       cur_func = cur_func->next = new_func_definition(func_type, &func_name);
       parse_parameter(cur_func, tok); // 引数
       expect(tok, TK_LEFT_BRACE);
@@ -309,7 +312,7 @@ Function *program(Token *tok) {
         cur_stmt = cur_stmt->next = new_node(ND_STMT);
         cur_stmt->body = stmt(cur_func, tok);
       }
-      cur_func->body= head.next;
+      cur_func->body = head.next;
     }
   }
   // 関数のリストの末端
@@ -368,12 +371,12 @@ Node *stmt(Function *func, Token *tok) {
     }
     node = head.next;
   }
-  
+
   else {
     node = expr(func, tok);
     expect(tok, TK_SEMICOLON);
   }
-  
+
   return node;
 }
 

@@ -20,22 +20,22 @@ int label_count;
 #define R15 15
 
 char *reg[16][4] = {
-  {  "al",   "ax",  "eax", "rax"},
-  { "dil",   "di",  "edi", "rdi"},
-  { "sil",   "si",  "esi", "rsi"},
-  {  "dl",   "dx",  "edx", "rdx"},
-  {  "cl",   "cx",  "ecx", "rcx"},
-  { "bpl",   "bp",  "ebp", "rbp"},
-  { "spl",   "sp",  "esp", "rsp"},
-  {  "bl",   "bx",  "ebx", "rbx"},
-  { "r8b",  "r8w",  "r8d", "r8" },
-  { "r9b",  "r9w",  "r9d", "r9" },
-  {"r10b", "r10w", "r10d", "r10"},
-  {"r11b", "r11w", "r11d", "r11"},
-  {"r12b", "r12w", "r12d", "r12"},
-  {"r13b", "r13w", "r13d", "r13"},
-  {"r14b", "r14w", "r14d", "r14"},
-  {"r15b", "r15w", "r15d", "r15"},
+    {  "al",   "ax",  "eax", "rax"},
+    { "dil",   "di",  "edi", "rdi"},
+    { "sil",   "si",  "esi", "rsi"},
+    {  "dl",   "dx",  "edx", "rdx"},
+    {  "cl",   "cx",  "ecx", "rcx"},
+    { "bpl",   "bp",  "ebp", "rbp"},
+    { "spl",   "sp",  "esp", "rsp"},
+    {  "bl",   "bx",  "ebx", "rbx"},
+    { "r8b",  "r8w",  "r8d",  "r8"},
+    { "r9b",  "r9w",  "r9d",  "r9"},
+    {"r10b", "r10w", "r10d", "r10"},
+    {"r11b", "r11w", "r11d", "r11"},
+    {"r12b", "r12w", "r12d", "r12"},
+    {"r13b", "r13w", "r13d", "r13"},
+    {"r14b", "r14w", "r14d", "r14"},
+    {"r15b", "r15w", "r15d", "r15"},
 };
 
 int reg_size(Type *type) {
@@ -138,7 +138,7 @@ void gen_prologue(Function *func) {
   // ローカル変数のスタック領域を確保する
   int offset = func->lvar_list->offset;
   if (offset) {
-    offset = (offset / 16 + 1)* 16;
+    offset = (offset / 16 + 1) * 16;
     printf("  sub rsp, %d\n", offset);
   }
 }
@@ -188,19 +188,20 @@ void gen_stmt(Function *func, Node *node) {
         gen_expr(node->cond);
         pop(node->cond->type, RAX);
         printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->cond->type)));
-        printf("  je  .L.else.%d\n",label);
+        printf("  je  .L.else.%d\n", label);
         gen_stmt(func, node->then);
         printf("  jmp .L.end.%d\n", label);
         printf(".L.else.%d:\n", label);
         gen_stmt(func, node->els);
 
         printf(".L.end.%d:\n", label);
-      } else {
+      }
+      else {
         gen_expr(node->cond);
         pop(node->cond->type, RAX);
         printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->cond->type)));
-        printf("  je  .L.end.%d\n",label);
-        gen_stmt(func,node->then);
+        printf("  je  .L.end.%d\n", label);
+        gen_stmt(func, node->then);
         printf(".L.end.%d:\n", label);
       }
       return;
@@ -269,7 +270,7 @@ void gen_expr(Node *node) {
         error("7個以上の引数をもつ関数呼び出しは現在対応していません\n");
 
       for (int i = arg_count; i > 0; i--)
-        pop(&arg_type[i-1], arg_reg_kind(i));
+        pop(&arg_type[i - 1], arg_reg_kind(i));
       printf("  call %s\n", node->func_name);
       push(node->type, RAX); // callした関数の返り値をスタックトップに積む
       return;

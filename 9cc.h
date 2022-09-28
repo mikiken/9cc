@@ -64,7 +64,7 @@ typedef enum {
   TK_ELSE,              // else
   TK_WHILE,             // while
   TK_FOR,               // for
-  TK_INT,               // int 
+  TK_INT,               // int
   TK_SIZEOF,            // sizeof
 } TokenKind;
 
@@ -146,7 +146,7 @@ struct Function {
   char *name;       // 関数名
   Lvar params_head; // 引数リストの先頭
   Node *body;       // statement
-  Lvar *lvar_list;     // ローカル変数のリスト
+  Lvar *lvar_list;  // ローカル変数のリスト
 };
 
 // 入力プログラム

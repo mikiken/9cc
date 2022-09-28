@@ -36,7 +36,7 @@ Type *new_type(TypeKind kind) {
 // 型なしnodeに型を追加した新たなnodeを返す
 Node *new_typed_node(Type *type, Node *node) {
   Node *node_typed = calloc(1, sizeof(Node));
-  *node_typed = *node; // nodeをコピー
+  *node_typed = *node;     // nodeをコピー
   node_typed->type = type; // 型情報を付加
   return node_typed;
 }
@@ -80,11 +80,13 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       if (return_lvar_type(lvar)->kind == TYPE_INT) {
         ty->kind = TYPE_INT;
         return new_typed_node(ty, node);
-      } else if (return_lvar_type(lvar)->kind == TYPE_PTR) {
+      }
+      else if (return_lvar_type(lvar)->kind == TYPE_PTR) {
         ty->kind = TYPE_PTR;
         ty->ptr_to = lvar->type->ptr_to;
         return new_typed_node(ty, node);
-      } else if (return_lvar_type(lvar)->kind == TYPE_ARRAY) {
+      }
+      else if (return_lvar_type(lvar)->kind == TYPE_ARRAY) {
         ty->kind = TYPE_ARRAY;
         ty->ptr_to = lvar->type->ptr_to;
         ty->array_size = lvar->type->array_size;
@@ -128,9 +130,11 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       Node *size_node = new_node(ND_NUM);
       if (lhs->type->kind == TYPE_INT) {
         size_node->val = SIZE_INT;
-      } else if (lhs->type->kind == TYPE_PTR) {
+      }
+      else if (lhs->type->kind == TYPE_PTR) {
         size_node->val = SIZE_PTR;
-      } else if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+      }
+      else if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
         if (lhs->type->ptr_to->kind == TYPE_INT)
           size_node->val = SIZE_INT * lhs->type->array_size;
         else
@@ -141,13 +145,13 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     case ND_RETURN: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Type *ty = calloc(1, sizeof(Type));
-      ty->kind =lhs->type->kind;
+      ty->kind = lhs->type->kind;
       return new_typed_binary(new_typed_node(ty, node), lhs, NULL);
     }
     case ND_IF: {
       Type *ty = calloc(1, sizeof(Type));
       ty->kind = TYPE_NULL;
-      Node *typed_node = new_typed_node(ty, node);     
+      Node *typed_node = new_typed_node(ty, node);
       Node *cond = add_type_to_node(lvar_list, node->cond);
       Node *then = add_type_to_node(lvar_list, node->then);
       if (node->els) {
@@ -213,7 +217,8 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
         if (lhs->type->ptr_to->kind == TYPE_INT) {
           size->val = SIZE_INT;
-        } else {
+        }
+        else {
           size->val = SIZE_PTR;
         }
         Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
@@ -239,13 +244,14 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       // 左辺がint型、右辺がポインタ型の減算は禁止されているのでエラーにする
       if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)
         error("左辺がint型,右辺がポインタ型の減算を行うことはできません");
-      
+
       // 左辺がポインタ型、右辺がint型の場合
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
         Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
         if (lhs->type->ptr_to->kind == TYPE_INT) {
           size->val = SIZE_INT;
-        } else {
+        }
+        else {
           size->val = SIZE_PTR;
         }
         Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
@@ -258,7 +264,8 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
         if (lhs->type->ptr_to->kind == TYPE_INT) {
           size->val = SIZE_INT;
-        } else {
+        }
+        else {
           size->val = SIZE_PTR;
         }
         Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
@@ -294,13 +301,14 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
         error("異なる型に対して比較を行うことはできません");
       }
       Type *ty = calloc(1, sizeof(Type));
-      ty->kind =lhs->type->kind;
+      ty->kind = lhs->type->kind;
       return new_typed_binary(new_typed_node(ty, node), lhs, rhs);
     }
     default:
-      error("***************************\n"
-            "* INTERNAL COMPILER ERROR *\n"
-            "***************************\n");
+      error(
+          "***************************\n"
+          "* INTERNAL COMPILER ERROR *\n"
+          "***************************\n");
   }
 }
 
@@ -311,4 +319,3 @@ void add_type_to_ast(Function *func_list) {
     f->body = add_type_to_node(f->lvar_list, f->body); // 型付きASTを構築
   }
 }
-
