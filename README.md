@@ -47,8 +47,8 @@ equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
-unary      = "sizeof" unary | "+"? primary | "-"? primary | "*" unary | "&" unary
-primary    = num | ident post_fix? | "(" expr ")"
-post_fix   = "[" expr "]" | args?
+unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&") unary
+postfix    = primary ("[" expr "]")?
+primary    = num | ident args? | "(" expr ")"
 args       = "(" (expr ("," expr)*)? ")"
 ```

@@ -29,6 +29,10 @@ Type *return_lvar_type(Lvar *lvar) {
   return lvar->type;
 }
 
+Type *new_type(TypeKind kind) {
+  Type *type = calloc(1, sizeof(Type));
+  type->kind = kind;
+}
 // 型なしnodeに型を追加した新たなnodeを返す
 Node *new_typed_node(Type *type, Node *node) {
   Node *node_typed = calloc(1, sizeof(Node));
@@ -186,43 +190,86 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       Node *typed_node = new_typed_node(declaration->ret_type, node);
       return typed_node;
     }
-    case ND_ADD:
-    case ND_SUB: {
-      Type *ty = calloc(1, sizeof(Type));
+    case ND_ADD: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
-      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+      // 左辺が配列の場合、ポインタにキャストする
+      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY)
         lhs = cast_array_to_pointer(lhs);
+      // 右辺が配列の場合、ポインタにキャストする
+      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY)
+        rhs = cast_array_to_pointer(rhs);
+      // ポインタ同士の加算は禁止されているのでエラーにする
+      if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR)
+        error("ポインタ同士を加算することはできません");
+      // 左辺がint型、右辺がポインタの場合は両辺を入れ替える
+      if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR) {
+        Node *original_lhs = lhs;
+        lhs = rhs;
+        rhs = original_lhs;
       }
+      // 左辺がポインタ型、右辺がint型の場合
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
-        Type *size_ty = calloc(1, sizeof(Type));
-        size_ty->kind = TYPE_INT;
-        Node *size = calloc(1, sizeof(Node));
-        size->kind = ND_NUM;
-        size->type = size_ty;
+        Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
         if (lhs->type->ptr_to->kind == TYPE_INT) {
           size->val = SIZE_INT;
         } else {
           size->val = SIZE_PTR;
         }
-        Type *mul_ty = calloc(1, sizeof(Type));
-        Node *multiply_offset = calloc(1, sizeof(Node));
-        multiply_offset->kind = ND_MUL;
-        mul_ty->kind = TYPE_INT;
-        multiply_offset->type = mul_ty;
-        multiply_offset->lhs = size;
-        multiply_offset->rhs = rhs;
-        node->rhs = multiply_offset;
-        node->lhs = lhs;
-        Node *typed_node = new_typed_node(lhs->type, node);
-        // nodeの両辺のnodeを型ありnodeに付け替える
-        return typed_node;
-      } else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
-        // そうでなければint同士の和差のはず
-        ty->kind = TYPE_INT;
-        return new_typed_binary(new_typed_node(ty, node), lhs, rhs);
-      } else {
-        error("ポインタの加減算のうち未実装のものです");
+        Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
+        return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
+      }
+      // 両辺がint型の場合
+      else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
+      }
+      else {
+        error("不正な加算を行うことはできません");
+      }
+    }
+    case ND_SUB: {
+      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      // 左辺が配列の場合、ポインタにキャストする
+      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY)
+        lhs = cast_array_to_pointer(lhs);
+      // 右辺が配列の場合、ポインタにキャストする
+      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY)
+        rhs = cast_array_to_pointer(rhs);
+      // 左辺がint型、右辺がポインタ型の減算は禁止されているのでエラーにする
+      if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)
+        error("左辺がint型,右辺がポインタ型の減算を行うことはできません");
+      
+      // 左辺がポインタ型、右辺がint型の場合
+      if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
+        Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
+        if (lhs->type->ptr_to->kind == TYPE_INT) {
+          size->val = SIZE_INT;
+        } else {
+          size->val = SIZE_PTR;
+        }
+        Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
+        return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
+      }
+      // 両辺がポインタ型の場合
+      else if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR) {
+        if (lhs->type->ptr_to->kind != rhs->type->ptr_to->kind)
+          error("異なる型へのポインタ同士で減算を行うことはできません");
+        Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
+        if (lhs->type->ptr_to->kind == TYPE_INT) {
+          size->val = SIZE_INT;
+        } else {
+          size->val = SIZE_PTR;
+        }
+        Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
+        return new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
+      }
+      // 両辺がint型の場合
+      else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+        return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
+      }
+      else {
+        error("不正な減算を行うことはできません");
       }
     }
     case ND_MUL:

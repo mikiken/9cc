@@ -177,13 +177,15 @@ assert 3 'int main(){int x; int *y; int **z; x=3; y=&x; z=&y; return **z; }'
 assert 5 'int main(){int x; int *y; x=3; y=&x; *y=5; return x; }'
 assert 5 'int plus2(int *x) {return *x + 2;} int main() {int x; x = 3; return plus2(&x);}'
 
-# ポインタの加減算
+# 関数宣言・ポインタの加減算
 assert_funcall 0 'int no_interaction_to_ptr(); int main() {int p; no_interaction_to_ptr(&p); return 0;}'
 assert_funcall 0 'int no_interaction_to_ptr_to_ptr(); int main() {int *p; no_interaction_to_ptr_to_ptr(&p); return 0;}'
 assert 6 'int main() {int a; int *b; int **c; int ***d; a=6; b=&a; c=&b; d=&c; return ***d;}'
 assert_funcall 4 'int alloc4(); int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q; q=p+2; return *q;}'
 assert_funcall 2 'int alloc4(); int main(){int *p; alloc4(&p, 1, 2, 4, 8); int *q; q=p+2; q=q-1; return *q;}'
 assert_funcall  4 'int alloc4(); int main(){int *p; alloc4(&p, 1, 2, 4, 8); return *(p+2);}'
+assert 1 'int main() {int a[2]; int k; k = &a[1] - &a[0]; return k;}'
+assert 1 'int main() {int a[2]; int *p; int *q; p = &a[0]; q = &a[1]; return q - p;}'
 
 # 'sizeof' 演算子
 assert 4 'int main(){int x; return sizeof(x);}'
@@ -199,9 +201,11 @@ assert 3 'int main() {int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *
 assert 8 'int main() {int a; a = 2; int b[2]; int c; c = 3; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1) + c;}'
 assert 5 'int main() {int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}'
 assert 3 'int main() {int a[2]; *a = 1; *(a+1) = 2; int *p; p = a; return *p + *(p+1);}'
+assert 3 'int main() {int a[2]; *a = 1; *(1+a) = 2; int *p; p = a; return *p + *(1+p);}'
 assert 12 'int main(){int a[3]; return sizeof(a);}'
 assert 24 'int main(){int *a[3]; return sizeof(a);}'
 assert 5 'int main() {int a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}'
+assert 5 'int main() {int a[2]; 0[a] = 2; 1[a] = 3; return 0[a] + 1[a];}'
 assert 3 'int main() {int num; num = 0; int a[2]; a[0] = 1; a[num+1] = 2; int *p; p = a; return *p + *(p+1);}'
 assert 7 'int main() {int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p + *(p+1);}'
 assert 4 'int main() {int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}'

@@ -274,6 +274,7 @@ Node *relational();
 Node *add();
 Node *mul();
 Node *unary();
+Node *postfix();
 Node *primary();
 
 Function *parse(Token *tok) {
@@ -461,9 +462,9 @@ Node *unary(Function *func, Token *tok) {
     return node;
   }
   if (consume(tok, TK_PLUS))
-    return new_binary_node(ND_ADD, new_num_node(0), primary(func, tok));
+    return new_binary_node(ND_ADD, new_num_node(0), unary(func, tok));
   if (consume(tok, TK_MINUS))
-    return new_binary_node(ND_SUB, new_num_node(0), primary(func, tok));
+    return new_binary_node(ND_SUB, new_num_node(0), unary(func, tok));
   if (consume(tok, TK_ASTERISK)) {
     Node *node = new_node(ND_DEREF);
     node->lhs = unary(func, tok);
@@ -474,7 +475,16 @@ Node *unary(Function *func, Token *tok) {
     node->lhs = unary(func, tok);
     return node;
   }
-  return primary(func, tok);
+  return postfix(func, tok);
+}
+
+Node *postfix(Function *func, Token *tok) {
+  Node *node = primary(func, tok);
+  if (consume(tok, TK_LEFT_BRACKET)) {
+    node = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, node, expr(func, tok)), NULL);
+    expect(tok, TK_RIGHT_BRACKET);
+  }
+  return node;
 }
 
 Node *primary(Function *func, Token *tok) {
@@ -506,19 +516,13 @@ Node *primary(Function *func, Token *tok) {
         node->expr = head.next;
       }
     }
-    else if (consume(tok, TK_LEFT_BRACKET)) { // 配列の場合
-      node = new_node(ND_DEREF);
-      node->lhs = new_node(ND_ADD);
-      node->lhs->lhs = lvar_node(func, &ident);
-      node->lhs->rhs = expr(func, tok);
-      expect(tok, TK_RIGHT_BRACKET);
-    }
     else { // ローカル変数の場合
       node = lvar_node(func, &ident);
     }
     return node;
   }
 
-  else
+  else {
     return new_num_node(expect_number(tok)); // それ以外は整数のはず
+  }
 }
