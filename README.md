@@ -1,22 +1,25 @@
 # 9cc
 C言語(のサブセット)コンパイラ
 
-# build
+
+# How to build
+## build
 ```
-# build
 $ git clone https://github.com/mikiken/9cc.git
 $ cd 9cc
 $ make
-
-# test
+```
+## test
+```
 $ make test
 ```
 
-## Implemented
+# Implemented
 - `+` `-` `*` `/` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
 - unary `*` `&` operators
 - local variables
+- global variables
 - `return` statement
 - `if` `else` statement
 - `while` `for` statement
@@ -29,9 +32,11 @@ $ make test
 - `sizeof` operator
 - one-dimensional array
 
-## BNF
+
+# BNF
 ```
-program    = func_def*
+program    = (global_var | func_def)*
+grobal_var = type ident("[" num "]")? ";"
 func_def   = type ident params "{" stmt* "}"
 type       = "int" "*"*
 params     = "(" (type ident ("," type ident)*)? ")"

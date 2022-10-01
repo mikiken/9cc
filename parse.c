@@ -71,10 +71,10 @@ int expect_number(Token *tok) {
   return val;
 }
 
-Lvar *find_lvar(Function *func, Token *tok) {
-  for (Lvar *var = func->lvar_list; var != NULL; var = var->next)
-    if (var->len == tok->len && !memcmp(tok->start, var->name, var->len))
-      return var;
+Var *find_var(Var *var_list, Token *var_name) {
+  for (Var *v = var_list; v != NULL; v = v->next)
+    if (v->len == var_name->len && !memcmp(var_name->start, v->name, v->len))
+      return v;
   return NULL;
 }
 
@@ -96,7 +96,7 @@ int lvar_offset(int cur_offset, int size) {
     return (cur_offset / size + 1) * size + size;
 }
 
-int calc_lvar_offset(Lvar *lvar_list, Type *type) {
+int calc_lvar_offset(Var *lvar_list, Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return lvar_offset(lvar_list->offset, SIZE_INT);
@@ -111,13 +111,13 @@ int calc_lvar_offset(Lvar *lvar_list, Type *type) {
 
 Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
   Node *node = new_node(ND_LVARDEF);
-  Lvar *lvar = find_lvar(func, tok);
+  Var *lvar = find_var(func->lvar_list, tok);
 
   if (lvar != NULL) {
     error_at(tok->start, "定義済みの変数または配列を再定義することはできません");
   }
   else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
-    lvar = calloc(1, sizeof(Lvar));
+    lvar = calloc(1, sizeof(Var));
     lvar->len = tok->len;
     lvar->offset = calc_lvar_offset(func->lvar_list, type);
     lvar->name = tok->start;
@@ -130,15 +130,22 @@ Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
   return node;
 }
 
-Node *lvar_node(Function *func, Token *tok) {
-  Node *node = new_node(ND_LVAR);
-  Lvar *lvar = find_lvar(func, tok);
-
-  if (lvar == NULL) {
-    error_at(tok->start, "未定義の変数です");
-  }
-  else {
+Node *var_node(Function *func, Token *var_name) {
+  Node *node;
+  Var *lvar = find_var(func->lvar_list, var_name);
+  // ローカル変数の場合
+  if (lvar != NULL) {
+    node = new_node(ND_LVAR);
     node->offset = lvar->offset;
+  }
+  // グローバル変数の場合
+  else {
+    Var *gvar = find_var(global_var_list, var_name);
+    if (gvar == NULL)
+      error_at(var_name->start, "未定義の変数です");
+    node = new_node(ND_GVAR);
+    node->gvar_name = calloc(var_name->len + 1, sizeof(char));
+    memcpy(node->gvar_name, var_name->start, var_name->len);
   }
   return node;
 }
@@ -191,7 +198,7 @@ Function *init_func_head() {
 }
 
 void init_lvar_list(Function *func) {
-  Lvar *lvar_tail = calloc(1, sizeof(Lvar));
+  Var *lvar_tail = calloc(1, sizeof(Var));
   lvar_tail->next = NULL;
   lvar_tail->name = "";
   lvar_tail->len = 0;
@@ -199,6 +206,23 @@ void init_lvar_list(Function *func) {
   lvar_tail->type = calloc(1, sizeof(Type)); // lvar_tailに型情報を付与
   lvar_tail->type->kind = TYPE_NULL;
   func->lvar_list = lvar_tail;
+}
+
+void init_global_var_list() {
+  global_var_tail.type = NULL;
+  global_var_tail.name = "";
+  global_var_tail.len = 0;
+  global_var_list = &global_var_tail;
+}
+
+void new_global_var(Type *gvar_type, Token *gvar_name) {
+  Var *new_gvar = calloc(1, sizeof(Var));
+  new_gvar->type = gvar_type;
+  new_gvar->name = calloc(gvar_name->len + 1, sizeof(char));
+  memcpy(new_gvar->name, gvar_name->start, gvar_name->len);
+  new_gvar->len = gvar_name->len;
+  new_gvar->next = global_var_list;
+  global_var_list = new_gvar;
 }
 
 void new_func_declaration(Type *func_type, Token *func_name) {
@@ -223,8 +247,8 @@ Function *new_func_definition(Type *func_type, Token *func_name) {
 
 // 関数の引数をローカル変数にコピー
 void copy_param_to_lvar(Function *func) {
-  for (Lvar *cur_param = func->params_head.next; cur_param; cur_param = cur_param->next) {
-    Lvar *new_lvar = calloc(1, sizeof(Lvar));
+  for (Var *cur_param = func->params_head.next; cur_param; cur_param = cur_param->next) {
+    Var *new_lvar = calloc(1, sizeof(Var));
     new_lvar->name = calloc(cur_param->len + 1, sizeof(char));
     memcpy(new_lvar->name, cur_param->name, cur_param->len);
     new_lvar->len = cur_param->len;
@@ -235,7 +259,7 @@ void copy_param_to_lvar(Function *func) {
   }
 }
 
-Lvar *init_params_head(Function *func) {
+Var *init_params_head(Function *func) {
   func->params_head.next = NULL;
   func->params_head.type = calloc(1, sizeof(Type));
   func->params_head.type->kind = TYPE_NULL;
@@ -247,9 +271,9 @@ Lvar *init_params_head(Function *func) {
 
 void parse_parameter(Function *func, Token *tok) {
   if (!consume(tok, TK_RIGHT_PARENTHESIS)) {
-    Lvar *cur_param = init_params_head(func);
+    Var *cur_param = init_params_head(func);
     do {
-      cur_param->next = calloc(1, sizeof(Lvar));
+      cur_param->next = calloc(1, sizeof(Var));
       cur_param->next->type = parse_type(tok); // parameterの型
       cur_param->next->name = calloc(tok->len + 1, sizeof(char));
       memcpy(cur_param->next->name, tok->start, tok->len);
@@ -282,6 +306,7 @@ Node *primary();
 
 Function *parse(Token *tok) {
   init_func_declaration();
+  init_global_var_list();
   return program(tok);
 }
 
@@ -289,30 +314,38 @@ Function *program(Token *tok) {
   Function *func_head = init_func_head();
   Function *cur_func = func_head;
   while (!is_eof(tok)) {
-    Type *func_type = parse_type(tok); // 関数の返り値の型
-    Token func_name = *tok;            // 関数名
+    Type *ident_type = parse_type(tok); // 関数/グローバル変数の型
+    Token ident_name = *tok;            // 関数/グローバル変数名
     next_token(tok);
-    expect(tok, TK_LEFT_PARENTHESIS);
 
-    // 関数宣言の場合、宣言を記録し読み飛ばす
-    if (consume_nostep(tok, TK_RIGHT_PARENTHESIS) && consume_nostep(tok->next, TK_SEMICOLON)) {
-      new_func_declaration(func_type, &func_name);
-      skip_token(tok, 2);
-    }
-
-    // 関数定義の場合
-    else {
-      cur_func = cur_func->next = new_func_definition(func_type, &func_name);
-      parse_parameter(cur_func, tok); // 引数
-      expect(tok, TK_LEFT_BRACE);
-      cur_func->body = new_node(ND_STMT); // statement
-      Node head;
-      Node *cur_stmt = &head;
-      while (!consume(tok, TK_RIGHT_BRACE)) {
-        cur_stmt = cur_stmt->next = new_node(ND_STMT);
-        cur_stmt->body = stmt(cur_func, tok);
+    // 関数の場合
+    if (consume(tok, TK_LEFT_PARENTHESIS)) {
+      // 関数宣言の場合、宣言を記録し読み飛ばす
+      if (consume_nostep(tok, TK_RIGHT_PARENTHESIS) && consume_nostep(tok->next, TK_SEMICOLON)) {
+        new_func_declaration(ident_type, &ident_name);
+        skip_token(tok, 2);
       }
-      cur_func->body = head.next;
+      // 関数定義の場合
+      else {
+        cur_func = cur_func->next = new_func_definition(ident_type, &ident_name);
+        parse_parameter(cur_func, tok); // 引数
+        expect(tok, TK_LEFT_BRACE);
+        cur_func->body = new_node(ND_STMT); // statement
+        Node head;
+        Node *cur_stmt = &head;
+        while (!consume(tok, TK_RIGHT_BRACE)) {
+          cur_stmt = cur_stmt->next = new_node(ND_STMT);
+          cur_stmt->body = stmt(cur_func, tok);
+        }
+        cur_func->body = head.next;
+      }
+    }
+    // グローバル変数の場合
+    else {
+      new_global_var(ident_type, &ident_name);
+      if (ident_type->kind == TYPE_ARRAY)
+        skip_token(tok, 3);
+      expect(tok, TK_SEMICOLON);
     }
   }
   // 関数のリストの末端
@@ -503,7 +536,8 @@ Node *primary(Function *func, Token *tok) {
     Token ident = *tok;
     next_token(tok);
 
-    if (consume(tok, TK_LEFT_PARENTHESIS)) { // 関数呼び出しの場合
+    // 関数呼び出しの場合
+    if (consume(tok, TK_LEFT_PARENTHESIS)) {
       node = new_node(ND_FUNCALL);
       node->func_name = calloc(ident.len + 1, sizeof(char));
       memcpy(node->func_name, ident.start, ident.len);
@@ -519,13 +553,14 @@ Node *primary(Function *func, Token *tok) {
         node->expr = head.next;
       }
     }
-    else { // ローカル変数の場合
-      node = lvar_node(func, &ident);
+    // 変数の場合
+    else {
+      node = var_node(func, &ident);
     }
     return node;
   }
-
+  // 整数の場合
   else {
-    return new_num_node(expect_number(tok)); // それ以外は整数のはず
+    return new_num_node(expect_number(tok));
   }
 }

@@ -24,14 +24,14 @@ struct Type {
   int array_size; // 配列の要素数
 };
 
-typedef struct Lvar Lvar;
+typedef struct Var Var;
 
-struct Lvar {
-  Lvar *next; // 次の変数またはNULL
+struct Var {
+  Var *next;  // 次の変数またはNULL
   Type *type; // 型
   char *name; // 変数の名前
   int len;    // 名前の文字数
-  int offset; // RBPからのオフセット
+  int offset; // RBPからのオフセット(ローカル変数のときのみ使用)
 };
 
 // トークンの種類
@@ -95,6 +95,7 @@ typedef enum {
   ND_NUM,     // 整数
   ND_LVARDEF, // ローカル変数の定義
   ND_LVAR,    // ローカル変数
+  ND_GVAR,    // グローバル変数
   ND_RETURN,  // return
   ND_IF,      // if
   ND_FOR,     // for | while
@@ -127,6 +128,8 @@ struct Node {
   // kind == ND_FUNCALL  func_name(expr, ...)
   char *func_name;
   Node *expr;
+  // kind == ND_GVAR
+  char *gvar_name;
 };
 
 typedef struct FuncDeclaration FuncDeclaration;
@@ -142,11 +145,11 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
-  Type *type;       // 型
-  char *name;       // 関数名
-  Lvar params_head; // 引数リストの先頭
-  Node *body;       // statement
-  Lvar *lvar_list;  // ローカル変数のリスト
+  Type *type;      // 型
+  char *name;      // 関数名
+  Var params_head; // 引数リストの先頭
+  Node *body;      // statement
+  Var *lvar_list;  // ローカル変数のリスト
 };
 
 // 入力プログラム
@@ -154,6 +157,9 @@ char *user_input;
 
 FuncDeclaration *func_declaration_list; // 関数宣言のリスト
 FuncDeclaration func_declaration_tail;
+
+Var *global_var_list; // グローバル変数のリスト
+Var global_var_tail;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);

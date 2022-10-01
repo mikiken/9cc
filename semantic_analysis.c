@@ -16,8 +16,24 @@ FuncDeclaration *find_declaration_by_name(char *name) {
   return NULL;
 }
 
-Lvar *find_lvar_by_offset(Lvar *lvar_list, int offset) {
-  for (Lvar *lvar = lvar_list; lvar; lvar = lvar->next) {
+Var *find_gvar_by_name(char *name) {
+  for (Var *gvar = global_var_list; gvar != NULL; gvar = gvar->next) {
+    if (!name) {
+      error("nameがNULLポインタです");
+    }
+    if (!gvar->name) {
+      error("gvar->nameがNULLポインタです");
+    }
+    //名前が一致している場合
+    if (!strcmp(gvar->name, name)) {
+      return gvar;
+    }
+  }
+  return NULL;
+}
+
+Var *find_lvar_by_offset(Var *lvar_list, int offset) {
+  for (Var *lvar = lvar_list; lvar; lvar = lvar->next) {
     if (lvar->offset == offset) {
       return lvar;
     }
@@ -26,14 +42,15 @@ Lvar *find_lvar_by_offset(Lvar *lvar_list, int offset) {
 }
 
 // 変数の型を返す関数
-Type *return_lvar_type(Lvar *lvar) {
-  return lvar->type;
+Type *var_type(Var *var) {
+  return var->type;
 }
 
 Type *new_type(TypeKind kind) {
   Type *type = calloc(1, sizeof(Type));
   type->kind = kind;
 }
+
 // 型なしnodeに型を追加した新たなnodeを返す
 Node *new_typed_node(Type *type, Node *node) {
   Node *node_typed = calloc(1, sizeof(Node));
@@ -68,7 +85,7 @@ Node *cast_array_to_pointer(Node *array_node) {
   return new_typed_binary(new_typed_node(ty_addr, ref_to_array), array_node, NULL);
 }
 
-Node *add_type_to_node(Lvar *lvar_list, Node *node) {
+Node *add_type_to_node(Var *lvar_list, Node *node) {
   switch (node->kind) {
     case ND_STMT: {
       Node typed_stmt_head;
@@ -83,30 +100,34 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     case ND_NUM: {
       return new_typed_node(new_type(TYPE_INT), node);
     }
+    // NOTE find_lvar_byoffset(node->offset)->typeを使えば場合分け不要かも
     case ND_LVARDEF:
     case ND_LVAR: {
-      Lvar *lvar = find_lvar_by_offset(lvar_list, node->offset);
+      Var *lvar = find_lvar_by_offset(lvar_list, node->offset);
       Type *ty = calloc(1, sizeof(Type));
-      if (return_lvar_type(lvar)->kind == TYPE_INT) {
+      if (var_type(lvar)->kind == TYPE_INT) {
         ty->kind = TYPE_INT;
         return new_typed_node(ty, node);
       }
-      else if (return_lvar_type(lvar)->kind == TYPE_PTR) {
+      else if (var_type(lvar)->kind == TYPE_PTR) {
         ty->kind = TYPE_PTR;
         ty->ptr_to = lvar->type->ptr_to;
         return new_typed_node(ty, node);
       }
-      else if (return_lvar_type(lvar)->kind == TYPE_ARRAY) {
+      else if (var_type(lvar)->kind == TYPE_ARRAY) {
         ty->kind = TYPE_ARRAY;
         ty->ptr_to = lvar->type->ptr_to;
         ty->array_size = lvar->type->array_size;
         return new_typed_node(ty, node);
       }
     }
+    case ND_GVAR: {
+      return new_typed_node(find_gvar_by_name(node->gvar_name)->type, node);
+    }
     case ND_ASSIGN: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
-      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY) {
+      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY) {
         rhs = cast_array_to_pointer(rhs);
       }
       if (lhs->type->kind != rhs->type->kind) {
@@ -116,7 +137,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
     }
     case ND_DEREF: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY) {
         lhs = cast_array_to_pointer(lhs);
       }
       if (lhs->type->kind != TYPE_PTR) {
@@ -139,7 +160,7 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       else if (lhs->type->kind == TYPE_PTR) {
         size_node->val = SIZE_PTR;
       }
-      else if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY) {
+      else if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY) {
         if (lhs->type->ptr_to->kind == TYPE_INT)
           size_node->val = SIZE_INT * lhs->type->array_size;
         else
@@ -197,10 +218,10 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
-      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY)
+      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY)
         lhs = cast_array_to_pointer(lhs);
       // 右辺が配列の場合、ポインタにキャストする
-      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY)
+      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
         rhs = cast_array_to_pointer(rhs);
       // ポインタ同士の加算は禁止されているのでエラーにする
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR)
@@ -229,10 +250,10 @@ Node *add_type_to_node(Lvar *lvar_list, Node *node) {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
-      if (lhs->kind == ND_LVAR && lhs->type->kind == TYPE_ARRAY)
+      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY)
         lhs = cast_array_to_pointer(lhs);
       // 右辺が配列の場合、ポインタにキャストする
-      if (rhs->kind == ND_LVAR && rhs->type->kind == TYPE_ARRAY)
+      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
         rhs = cast_array_to_pointer(rhs);
       // 左辺がint型、右辺がポインタ型の減算は禁止されているのでエラーにする
       if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)

@@ -211,5 +211,17 @@ assert 7 'int main() {int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p 
 assert 4 'int main() {int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}'
 assert 21 'int fibonacci(int n) {int fib[10]; fib[0] = 0; fib[1] = 1; int i; for(i = 2; i < 10; i = i+1){fib[i] = fib[i-1] + fib[i-2];} return fib[n];} int main() {return fibonacci(8);}'
 
+# グローバル変数
+assert 0 'int x; int y[5]; int main() {return 0;}'
+assert 0 'int x; int y[20]; int main() {return x;}'
+assert 0 'int x; int y[20]; int main() {return y[2];}'
+assert 0 'int x; int y[20]; int main() {return x + y[2];}'
+assert 3 'int x; int y[20]; int main() {x = 3; return x;}'
+assert 5 'int x; int y[20]; int main() {x = 3; y[2] = 2; return x + y[2];}'
+assert 4 'int x; int main() {return sizeof(x);}'
+assert 20 'int x[5]; int main() { return sizeof(x); }'
+assert 3 'int *p; int main() {int x; p = &x; x = 3; return *p;}'
+assert 8 'int *ptr[2]; int main() {int x; int y; x = 7; y = 1; ptr[0] = &x; ptr[1] = &y; return *ptr[0] + *ptr[1];}'
+
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

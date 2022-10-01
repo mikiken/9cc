@@ -127,9 +127,31 @@ void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
   }
 }
 
-void pass_argument_to_register(Lvar *arg, int arg_count) {
+void pass_argument_to_register(Var *arg, int arg_count) {
   printf("  lea rax, [rbp-%d]\n", arg->offset); // アドレスは8バイト
   mov_register_to_memory(arg->type, RAX, arg_reg_kind(arg_count));
+}
+
+int calc_gvar_size(Type *type) {
+  switch (type->kind) {
+    case TYPE_INT:
+      return SIZE_INT;
+    case TYPE_PTR:
+      return SIZE_PTR;
+    case TYPE_ARRAY:
+      return calc_gvar_size(type->ptr_to) * type->array_size;
+    default:
+      error("不正な型のグローバル変数のサイズを計算することはできません");
+  }
+}
+
+void gen_gvar_declaration(Var *gvar_list) {
+  printf(".data\n");
+  for (Var *gvar = gvar_list; gvar->next != NULL; gvar = gvar->next) {
+    printf("%s:\n", gvar->name);
+    printf("  .zero %d\n", calc_gvar_size(gvar->type));
+  }
+  printf("\n");
 }
 
 void gen_prologue(Function *func) {
@@ -156,10 +178,13 @@ void gen_expr();
 
 void gen_addr(Node *node) {
   switch (node->kind) {
-    // 変数のアドレスをスタックにpushする
     case ND_LVAR:
       printf("  lea rdi, [rbp-%d]\n", node->offset); // アドレスは8byte
-      printf("  push rdi\n");
+      printf("  push rdi\n");                        // ローカル変数のアドレスをスタックにpush
+      return;
+    case ND_GVAR:
+      printf("  lea rdi, [rip+%s]\n", node->gvar_name); // アドレスは8byte
+      printf("  push rdi\n");                           //グローバル変数のアドレスをスタックにpush
       return;
     // derefが連続しているときは、更にlhsのアドレスを参照する
     case ND_DEREF:
@@ -237,6 +262,7 @@ void gen_expr(Node *node) {
     case ND_LVARDEF:
       return;
     case ND_LVAR:
+    case ND_GVAR:
       gen_addr(node);                               // 変数のアドレスをスタックにpush
       pop_addr(RDI);                                // rdiに変数のアドレスをセット
       mov_memory_to_register(node->type, RAX, RDI); // rdiの参照先の値をraxに代入する
@@ -322,17 +348,21 @@ void gen_expr(Node *node) {
 }
 
 void codegen(Function *typed_func_list) {
-  printf(".intel_syntax noprefix\n");
+  printf(".intel_syntax noprefix\n\n");
+  // グローバル変数の領域確保
+  gen_gvar_declaration(global_var_list);
+  printf(".text\n");
   // 先頭の関数から順にコード生成
   for (Function *f = typed_func_list; f; f = f->next) {
     printf(".global %s\n", f->name);
     printf("%s:\n", f->name);
     gen_prologue(f);
     int arg_count = 0;
-    for (Lvar *param = f->params_head.next; param; param = param->next) {
+    for (Var *param = f->params_head.next; param; param = param->next) {
       pass_argument_to_register(param, ++arg_count);
     }
     gen_stmt(f, f->body);
     gen_epilogue(f);
+    printf("\n");
   }
 }
