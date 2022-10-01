@@ -100,26 +100,9 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
     case ND_NUM: {
       return new_typed_node(new_type(TYPE_INT), node);
     }
-    // NOTE find_lvar_byoffset(node->offset)->typeを使えば場合分け不要かも
     case ND_LVARDEF:
     case ND_LVAR: {
-      Var *lvar = find_lvar_by_offset(lvar_list, node->offset);
-      Type *ty = calloc(1, sizeof(Type));
-      if (var_type(lvar)->kind == TYPE_INT) {
-        ty->kind = TYPE_INT;
-        return new_typed_node(ty, node);
-      }
-      else if (var_type(lvar)->kind == TYPE_PTR) {
-        ty->kind = TYPE_PTR;
-        ty->ptr_to = lvar->type->ptr_to;
-        return new_typed_node(ty, node);
-      }
-      else if (var_type(lvar)->kind == TYPE_ARRAY) {
-        ty->kind = TYPE_ARRAY;
-        ty->ptr_to = lvar->type->ptr_to;
-        ty->array_size = lvar->type->array_size;
-        return new_typed_node(ty, node);
-      }
+      return new_typed_node(find_lvar_by_offset(lvar_list, node->offset)->type, node);
     }
     case ND_GVAR: {
       return new_typed_node(find_gvar_by_name(node->gvar_name)->type, node);
