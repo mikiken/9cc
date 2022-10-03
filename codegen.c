@@ -42,6 +42,8 @@ int reg_size(Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return SIZE_INT;
+    case TYPE_CHAR:
+      return SIZE_CHAR;
     case TYPE_PTR:
       return SIZE_PTR;
     default:
@@ -102,10 +104,13 @@ void push_immediate_value(int val) {
 void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      printf("  mov %s, DWORD PTR [%s]\n", reg_name(dest_reg, 4), reg_name(src_reg, 8));
+      printf("  mov %s, DWORD PTR [%s]\n", reg_name(dest_reg, SIZE_INT), reg_name(src_reg, 8));
+      return;
+    case TYPE_CHAR:
+      printf("  movsx %s, BYTE PTR [%s]\n", reg_name(dest_reg, 4), reg_name(src_reg, 8));
       return;
     case TYPE_PTR:
-      printf("  mov %s, [%s]\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
+      printf("  mov %s, [%s]\n", reg_name(dest_reg, SIZE_PTR), reg_name(src_reg, 8));
       return;
     default:
       error("レジスタに値をセットできませんでした");
@@ -116,10 +121,13 @@ void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
 void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
   switch (type->kind) {
     case TYPE_INT:
-      printf("  mov DWORD PTR [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, 4));
+      printf("  mov DWORD PTR [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, SIZE_INT));
+      return;
+    case TYPE_CHAR:
+      printf("  mov [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, SIZE_CHAR));
       return;
     case TYPE_PTR:
-      printf("  mov [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, 8));
+      printf("  mov [%s], %s\n", reg_name(dest_reg, 8), reg_name(src_reg, SIZE_PTR));
       return;
     default:
       error("メモリに値をセットできませんでした");
@@ -136,6 +144,8 @@ int calc_gvar_size(Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return SIZE_INT;
+    case TYPE_CHAR:
+      return SIZE_CHAR;
     case TYPE_PTR:
       return SIZE_PTR;
     case TYPE_ARRAY:

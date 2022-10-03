@@ -71,6 +71,9 @@ Node *new_size_node(TypeKind kind) {
   if (kind == TYPE_INT) {
     size->val = SIZE_INT;
   }
+  else if (kind == TYPE_CHAR) {
+    size->val = SIZE_CHAR;
+  }
   else {
     size->val = SIZE_PTR;
   }
@@ -83,6 +86,19 @@ Node *cast_array_to_pointer(Node *array_node) {
   ty_addr->ptr_to = array_node->type->ptr_to; // 配列の型はptr_toに入っている
   ty_addr->array_size = array_node->type->array_size;
   return new_typed_binary(new_typed_node(ty_addr, ref_to_array), array_node, NULL);
+}
+
+bool is_arithmeric_type(TypeKind kind) {
+  if (kind == TYPE_INT || kind == TYPE_CHAR)
+    return true;
+  return false;
+}
+
+void fix_rhs_type(Node *lhs, Node *rhs) {
+  // NOTE: この関数の処理が詰めきれてない気がする
+  // 左辺がchar型で右辺がint型の場合は,右辺をchar型に修正する
+  if (lhs->type->kind == TYPE_CHAR && rhs->type->kind == TYPE_INT)
+    rhs->type->kind = TYPE_CHAR;
 }
 
 Node *add_type_to_node(Var *lvar_list, Node *node) {
@@ -110,9 +126,11 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
     case ND_ASSIGN: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
-      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY) {
+      // 右辺が変数型の場合は先頭要素へのポインタにキャストする
+      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
         rhs = cast_array_to_pointer(rhs);
-      }
+      fix_rhs_type(lhs, rhs);
+      // 両辺で型が異なる場合はエラーにする
       if (lhs->type->kind != rhs->type->kind) {
         error("異なる型の変数を代入することはできません");
       }
@@ -140,12 +158,17 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
       if (lhs->type->kind == TYPE_INT) {
         size_node->val = SIZE_INT;
       }
+      else if (lhs->type->kind == TYPE_CHAR) {
+        size_node->val = SIZE_CHAR;
+      }
       else if (lhs->type->kind == TYPE_PTR) {
         size_node->val = SIZE_PTR;
       }
       else if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY) {
         if (lhs->type->ptr_to->kind == TYPE_INT)
           size_node->val = SIZE_INT * lhs->type->array_size;
+        else if (lhs->type->ptr_to->kind == TYPE_CHAR)
+          size_node->val = SIZE_CHAR * lhs->type->array_size;
         else
           size_node->val = SIZE_PTR * lhs->type->array_size;
       }
@@ -221,8 +244,9 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
         Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
         return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
       }
-      // 両辺がint型の場合
-      else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+      // 両辺が算術型の場合
+      else if (is_arithmeric_type(lhs->type->kind) && is_arithmeric_type(rhs->type->kind)) {
+        fix_rhs_type(lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
       }
       else {
@@ -256,8 +280,9 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
         Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
       }
-      // 両辺がint型の場合
-      else if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_INT) {
+      // 両辺が算術型の場合
+      else if (is_arithmeric_type(lhs->type->kind) && is_arithmeric_type(rhs->type->kind)) {
+        fix_rhs_type(lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
       }
       else {

@@ -26,7 +26,8 @@ $ make test
 - `{…}` compound statements (blocks)
 - function call and definition with up to 6 args
 - function declaration without type checking
-- keyword `int`
+- `int` type
+- `char` type (NOTE: String literals are not yet implemented.)
 - pointer type
 - pointer add and sub
 - `sizeof` operator

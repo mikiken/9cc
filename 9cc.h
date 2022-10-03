@@ -7,11 +7,13 @@
 
 #define SIZE_INT 4
 #define SIZE_PTR 8
+#define SIZE_CHAR 1
 
 // 型の種類
 typedef enum {
   TYPE_NULL,
   TYPE_INT,   // int
+  TYPE_CHAR,  // char
   TYPE_PTR,   // pointer to ...
   TYPE_ARRAY, // 配列型
 } TypeKind;
@@ -65,6 +67,7 @@ typedef enum {
   TK_WHILE,             // while
   TK_FOR,               // for
   TK_INT,               // int
+  TK_CHAR,              // char
   TK_SIZEOF,            // sizeof
 } TokenKind;
 

@@ -223,5 +223,15 @@ assert 20 'int x[5]; int main() { return sizeof(x); }'
 assert 3 'int *p; int main() {int x; p = &x; x = 3; return *p;}'
 assert 8 'int *ptr[2]; int main() {int x; int y; x = 7; y = 1; ptr[0] = &x; ptr[1] = &y; return *ptr[0] + *ptr[1];}'
 
+# char型
+assert 3 'int main() {char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; return x[0] + y;}'
+assert 1 'int main() { char x; x=1; return x; }'
+assert 1 'int main() { char x; x=1; char y; y=2; return x; }'
+assert 2 'int main() { char x; x=1; char y; y=2; return y; }'
+assert 3 'int main() {char x; int y; y = 3; x = y; return x;}'
+assert 1 'int main() { char x; return sizeof(x); }'
+assert 10 'int main() { char x[10]; return sizeof(x); }'
+assert 1 'int sub_char(char a, char b, char c) { return a-b-c; } int main() { return sub_char(7, 3, 3); }'
+
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

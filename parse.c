@@ -82,6 +82,8 @@ int base_type_size(Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return SIZE_INT;
+    case TYPE_CHAR:
+      return SIZE_CHAR;
     case TYPE_PTR:
       return SIZE_PTR;
     default:
@@ -100,6 +102,8 @@ int calc_lvar_offset(Var *lvar_list, Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return lvar_offset(lvar_list->offset, SIZE_INT);
+    case TYPE_CHAR:
+      return lvar_offset(lvar_list->offset, SIZE_CHAR);
     case TYPE_PTR:
       return lvar_offset(lvar_list->offset, SIZE_PTR);
     case TYPE_ARRAY:
@@ -155,6 +159,9 @@ Type *parse_base_type(Token *tok) {
   if (consume(tok, TK_INT)) {
     base_type->kind = TYPE_INT;
   }
+  else if (consume(tok, TK_CHAR)) {
+    base_type->kind = TYPE_CHAR;
+  }
   else {
     base_type->kind = TYPE_NULL;
   }
@@ -165,6 +172,7 @@ Type *parse_type(Token *tok) {
   Type *type = parse_base_type(tok);
   if (type->kind == TYPE_NULL)
     return NULL;
+  // ポインタ型の場合
   while (consume(tok, TK_ASTERISK)) {
     Type *ty = calloc(1, sizeof(Type));
     ty->kind = TYPE_PTR;
@@ -172,6 +180,7 @@ Type *parse_type(Token *tok) {
     type = ty;
   }
   tok = tok->next; // 識別子を読み飛ばす
+  // 配列型の場合
   if (consume_nostep(tok, TK_LEFT_BRACKET)) {
     tok = tok->next; // tokを数字に進める
     Type *ty_array = calloc(1, sizeof(Type));
