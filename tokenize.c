@@ -213,21 +213,30 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    // 識別子の場合
     if (is_ident_first(*p)) {
       char *start = p;
       do {
         p++;
       } while (is_ident(*p));
-      cur = new_token(TK_IDENT, cur, start, --p);
-      p++;
+      cur = new_token(TK_IDENT, cur, start, p - 1);
       continue;
     }
 
+    // 文字列リテラルの場合
+    if (startswith(p, "\"")) {
+      char *start = ++p; // ダブルクオートを読み飛ばす
+      while (*p != '\"')
+        p++;
+      cur = new_token(TK_STR, cur, start, p - 1);
+      p++; // ダブルクオートを読み飛ばす
+      continue;
+    }
+    // 整数の場合
     if (isdigit(*p)) {
       char *start = p; // 読み込み開始位置を記録
       int value = strtol(p, &p, 10);
-      cur = new_token(TK_NUM, cur, start, --p);
-      p++;
+      cur = new_token(TK_NUM, cur, start, p - 1);
       cur->val = value;
       continue;
     }
