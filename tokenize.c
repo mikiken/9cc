@@ -232,6 +232,7 @@ Token *tokenize(char *user_input) {
       p++; // ダブルクオートを読み飛ばす
       continue;
     }
+
     // 整数の場合
     if (isdigit(*p)) {
       char *start = p; // 読み込み開始位置を記録

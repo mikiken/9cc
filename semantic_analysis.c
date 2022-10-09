@@ -16,8 +16,8 @@ FuncDeclaration *find_declaration_by_name(char *name) {
   return NULL;
 }
 
-Var *find_gvar_by_name(char *name) {
-  for (Var *gvar = global_var_list; gvar != NULL; gvar = gvar->next) {
+Obj *find_gvar_by_name(char *name) {
+  for (Obj *gvar = global_var_list; gvar != NULL; gvar = gvar->next) {
     if (!name) {
       error("nameがNULLポインタです");
     }
@@ -32,8 +32,19 @@ Var *find_gvar_by_name(char *name) {
   return NULL;
 }
 
-Var *find_lvar_by_offset(Var *lvar_list, int offset) {
-  for (Var *lvar = lvar_list; lvar; lvar = lvar->next) {
+Obj *find_str_by_id(int id) {
+  for (Obj *str = global_var_list; str != NULL; str = str->next) {
+    if (!str->init_data)
+      continue;
+    //idが一致している場合
+    if (str->str_id == id)
+      return str;
+  }
+  return NULL;
+}
+
+Obj *find_lvar_by_offset(Obj *lvar_list, int offset) {
+  for (Obj *lvar = lvar_list; lvar; lvar = lvar->next) {
     if (lvar->offset == offset) {
       return lvar;
     }
@@ -42,7 +53,7 @@ Var *find_lvar_by_offset(Var *lvar_list, int offset) {
 }
 
 // 変数の型を返す関数
-Type *var_type(Var *var) {
+Type *var_type(Obj *var) {
   return var->type;
 }
 
@@ -101,7 +112,7 @@ void fix_rhs_type(Node *lhs, Node *rhs) {
     rhs->type->kind = TYPE_CHAR;
 }
 
-Node *add_type_to_node(Var *lvar_list, Node *node) {
+Node *add_type_to_node(Obj *lvar_list, Node *node) {
   switch (node->kind) {
     case ND_STMT: {
       Node typed_stmt_head;
@@ -115,6 +126,12 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
     }
     case ND_NUM: {
       return new_typed_node(new_type(TYPE_INT), node);
+    }
+    case ND_STR: {
+      Node *ref_to_str = new_typed_node(new_type(TYPE_PTR), new_node(ND_ADDR));
+      ref_to_str->type->ptr_to = new_type(TYPE_CHAR);
+      ref_to_str->lhs = new_typed_node(new_type(TYPE_CHAR), node);
+      return ref_to_str;
     }
     case ND_LVARDEF:
     case ND_LVAR: {
@@ -162,7 +179,10 @@ Node *add_type_to_node(Var *lvar_list, Node *node) {
         size_node->val = SIZE_CHAR;
       }
       else if (lhs->type->kind == TYPE_PTR) {
-        size_node->val = SIZE_PTR;
+        if (lhs->lhs && lhs->lhs->kind == ND_STR)
+          size_node->val = SIZE_CHAR * (find_str_by_id(lhs->lhs->str_id)->len + 1); //　文字列+\0の文字数
+        else
+          size_node->val = SIZE_PTR;
       }
       else if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY) {
         if (lhs->type->ptr_to->kind == TYPE_INT)

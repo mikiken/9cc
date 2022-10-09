@@ -26,14 +26,20 @@ struct Type {
   int array_size; // 配列の要素数
 };
 
-typedef struct Var Var;
+typedef struct Obj Obj;
 
-struct Var {
-  Var *next;  // 次の変数またはNULL
+struct Obj {
+  Obj *next;  // 次のオブジェクトまたはNULL
   Type *type; // 型
+  int len;    // 識別子または文字列リテラルの文字数
+
+  // 変数
   char *name; // 変数の名前
-  int len;    // 名前の文字数
   int offset; // RBPからのオフセット(ローカル変数のときのみ使用)
+
+  // 文字列リテラル
+  char *init_data;
+  int str_id;
 };
 
 // トークンの種類
@@ -97,6 +103,7 @@ typedef enum {
   ND_LE,      // <=
   ND_ASSIGN,  // =
   ND_NUM,     // 整数
+  ND_STR,     // 文字列リテラル
   ND_LVARDEF, // ローカル変数の定義
   ND_LVAR,    // ローカル変数
   ND_GVAR,    // グローバル変数
@@ -134,6 +141,8 @@ struct Node {
   Node *expr;
   // kind == ND_GVAR
   char *gvar_name;
+  // kind == ND_STR
+  int str_id;
 };
 
 typedef struct FuncDeclaration FuncDeclaration;
@@ -151,9 +160,9 @@ struct Function {
   Function *next;
   Type *type;      // 型
   char *name;      // 関数名
-  Var params_head; // 引数リストの先頭
+  Obj params_head; // 引数リストの先頭
   Node *body;      // statement
-  Var *lvar_list;  // ローカル変数のリスト
+  Obj *lvar_list;  // ローカル変数のリスト
 };
 
 // 入力プログラム
@@ -162,14 +171,15 @@ char *user_input;
 FuncDeclaration *func_declaration_list; // 関数宣言のリスト
 FuncDeclaration func_declaration_tail;
 
-Var *global_var_list; // グローバル変数のリスト
-Var global_var_tail;
+Obj *global_var_list; // グローバル変数のリスト
+Obj global_var_tail;
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void unexpected_symbol_error(char *loc, TokenKind kind);
 
 Node *new_node(NodeKind kind);
+Type *new_type(TypeKind kind);
 int base_type_size(Type *type);
 
 Function *parse(Token *tok);

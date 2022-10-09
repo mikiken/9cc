@@ -135,7 +135,7 @@ void mov_register_to_memory(Type *type, int dest_reg, int src_reg) {
   }
 }
 
-void pass_argument_to_register(Var *arg, int arg_count) {
+void pass_argument_to_register(Obj *arg, int arg_count) {
   printf("  lea rax, [rbp-%d]\n", arg->offset); // アドレスは8バイト
   mov_register_to_memory(arg->type, RAX, arg_reg_kind(arg_count));
 }
@@ -155,11 +155,19 @@ int calc_gvar_size(Type *type) {
   }
 }
 
-void gen_gvar_declaration(Var *gvar_list) {
+void gen_data_secton(Obj *gvar_list) {
   printf(".data\n");
-  for (Var *gvar = gvar_list; gvar->next != NULL; gvar = gvar->next) {
-    printf("%s:\n", gvar->name);
-    printf("  .zero %d\n", calc_gvar_size(gvar->type));
+  for (Obj *obj = gvar_list; obj->next != NULL; obj = obj->next) {
+    // 文字列リテラルの場合
+    if (obj->init_data) {
+      printf(".LC%d:\n", obj->str_id);
+      printf("  .string \"%s\"\n", obj->init_data);
+    }
+    // グローバル変数の場合
+    else {
+      printf("%s:\n", obj->name);
+      printf("  .zero %d\n", calc_gvar_size(obj->type));
+    }
   }
   printf("\n");
 }
@@ -195,6 +203,10 @@ void gen_addr(Node *node) {
     case ND_GVAR:
       printf("  lea rdi, [rip+%s]\n", node->gvar_name); // アドレスは8byte
       printf("  push rdi\n");                           //グローバル変数のアドレスをスタックにpush
+      return;
+    case ND_STR:
+      printf("  lea rdi, [rip+.LC%d]\n", node->str_id);
+      printf("  push rdi\n");
       return;
     // derefが連続しているときは、更にlhsのアドレスを参照する
     case ND_DEREF:
@@ -360,7 +372,7 @@ void gen_expr(Node *node) {
 void codegen(Function *typed_func_list) {
   printf(".intel_syntax noprefix\n\n");
   // グローバル変数の領域確保
-  gen_gvar_declaration(global_var_list);
+  gen_data_secton(global_var_list);
   printf(".text\n");
   // 先頭の関数から順にコード生成
   for (Function *f = typed_func_list; f; f = f->next) {
@@ -368,7 +380,7 @@ void codegen(Function *typed_func_list) {
     printf("%s:\n", f->name);
     gen_prologue(f);
     int arg_count = 0;
-    for (Var *param = f->params_head.next; param; param = param->next) {
+    for (Obj *param = f->params_head.next; param; param = param->next) {
       pass_argument_to_register(param, ++arg_count);
     }
     gen_stmt(f, f->body);

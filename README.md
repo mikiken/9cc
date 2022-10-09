@@ -39,7 +39,7 @@ $ make test
 program    = (global_var | func_def)*
 grobal_var = type ident("[" num "]")? ";"
 func_def   = type ident params "{" stmt* "}"
-type       = "int" "*"*
+type       = ("int" | "char") "*"*
 params     = "(" (type ident ("," type ident)*)? ")"
 stmt       = expr ";"
            | "{" stmt* "}"
@@ -55,6 +55,6 @@ add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary)*
 unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&") unary
 postfix    = primary ("[" expr "]")?
-primary    = num | ident args? | "(" expr ")"
+primary    = num | ident args? | string | "(" expr ")"
 args       = "(" (expr ("," expr)*)? ")"
 ```
