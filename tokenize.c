@@ -226,8 +226,10 @@ Token *tokenize(char *user_input) {
     // 文字列リテラルの場合
     if (startswith(p, "\"")) {
       char *start = ++p; // ダブルクオートを読み飛ばす
-      while (*p != '\"')
-        p++;
+      for (; *p != '\"'; p++) {
+        if (*p == '\0' || *p == '\n')
+          error_at(start, "文字列リテラルが閉じていません");
+      }
       cur = new_token(TK_STR, cur, start, p - 1);
       p++; // ダブルクオートを読み飛ばす
       continue;
