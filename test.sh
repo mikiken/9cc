@@ -1,6 +1,7 @@
 #!/bin/bash
 cat << EOT >> tmp2.c
 #include <stdlib.h>
+#include <stdio.h>
 
 int foo() { return 5; }
 int add2(int a, int b) {return a+b;}
@@ -241,6 +242,22 @@ assert 0 'int main() { return "abc"[3]; }'
 assert 0 'int main() { return ""[0]; }'
 assert 4 'int main() { return sizeof("abc"); }'
 assert 1 'int main() { return sizeof(""); }'
+assert_funcall 0 'int puts(); int main() {char *str; str = "Hello, implementation-defined behavior!"; puts(str); return 0;}'
+
+# エスケープシーケンス
+assert 7 'int main() {char *str; str = "\a"; return str[0];}'
+assert 8 'int main() {char *str; str = "\b"; return str[0];}'
+assert 9 'int main() {char *str; str = "\t"; return *str;}'
+assert 10 'int main() {char *str; str = "\n"; return *str;}'
+assert 11 'int main() {char *str; str = "\v"; return *str;}'
+assert 12 'int main() {char *str; str = "\f"; return str[0];}'
+assert 13 'int main() {char *str; str = "\r"; return *str;}'
+assert 63 'int main() {char *str; str = "\?"; return *str;}'
+assert 39 "int main() {char *str; str = \"\'\"; return *str;}"
+assert 92 'int main() {char *str; str = "\\"; return *str;}'
+assert 27 'int main() {char *str; str = "\e"; return str[0];}'
+assert 34 'int main() {char *str; str = "\""; return *str;}'
+assert_funcall 0 'int puts(); int main() {char *str; str = "Hello, implementation-defined behavior!\n"; puts(str); return 0;}'
 
 echo OK
 rm tmp tmp.o tmp2.c tmp2.o

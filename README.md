@@ -27,7 +27,8 @@ $ make test
 - function call and definition with up to 6 args
 - function declaration without type checking
 - `int` type
-- `char` type (NOTE: String literals are not yet implemented.)
+- `char` type
+- string literal
 - pointer type
 - pointer add and sub
 - `sizeof` operator
