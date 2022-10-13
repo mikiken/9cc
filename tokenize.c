@@ -31,6 +31,28 @@ Token *new_token(TokenKind kind, Token *cur, char *start, char *end) {
   return tok;
 }
 
+char read_escape_char(char *p) {
+  switch (*p) {
+    case 'a':
+      return 7;
+    case 'e':
+      return 27;
+    default:
+      return *p;
+  }
+}
+
+char *find_string_literal_end(char *start) {
+  char *p;
+  for (p = start; *p != '\"'; p++) {
+    if (*p == '\0' || *p == '\n')
+      error_at(start, "文字列リテラルが閉じていません");
+    if (*p == '\\')
+      p++;
+  }
+  return p;
+}
+
 // 入力文字列をトークナイズしてそれを返す
 Token *tokenize(char *user_input) {
   char *p = user_input;
@@ -213,21 +235,43 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    // 識別子の場合
     if (is_ident_first(*p)) {
       char *start = p;
       do {
         p++;
       } while (is_ident(*p));
-      cur = new_token(TK_IDENT, cur, start, --p);
-      p++;
+      cur = new_token(TK_IDENT, cur, start, p - 1);
       continue;
     }
 
+    // 文字列リテラルの場合
+    if (startswith(p, "\"")) {
+      char *start = ++p; // ダブルクオートを読み飛ばす
+      char *end = find_string_literal_end(p);
+      char *buf = calloc(end - start, sizeof(char));
+      int len = 0;
+      while (*p != '\"') {
+        // エスケープシーケンスの場合
+        if (*p == '\\') {
+          buf[len++] = '\\';
+          buf[len++] = read_escape_char(p + 1);
+          p += 2;
+        }
+        else {
+          buf[len++] = *p++;
+        }
+      }
+      cur = new_token(TK_STR, cur, buf, buf + len - 1);
+      p++; // ダブルクオートを読み飛ばす
+      continue;
+    }
+
+    // 整数の場合
     if (isdigit(*p)) {
       char *start = p; // 読み込み開始位置を記録
       int value = strtol(p, &p, 10);
-      cur = new_token(TK_NUM, cur, start, --p);
-      p++;
+      cur = new_token(TK_NUM, cur, start, p - 1);
       cur->val = value;
       continue;
     }
