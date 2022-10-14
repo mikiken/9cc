@@ -182,6 +182,7 @@ Node *new_node(NodeKind kind);
 Type *new_type(TypeKind kind);
 int base_type_size(Type *type);
 
+char *read_file(char *path);
 Function *parse(Token *tok);
 Token *tokenize(char *user_input);
 void add_type_to_ast(Function *func_list);

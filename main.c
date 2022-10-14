@@ -6,8 +6,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  user_input = argv[1];
-
+  user_input = read_file(argv[1]);
   Token *tok = tokenize(user_input);
   Function *func_list = parse(tok);
   add_type_to_ast(func_list);
