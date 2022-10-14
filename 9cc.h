@@ -165,6 +165,8 @@ struct Function {
   Obj *lvar_list;  // ローカル変数のリスト
 };
 
+// 入力プログラムの名前
+char *file_name;
 // 入力プログラム
 char *user_input;
 
