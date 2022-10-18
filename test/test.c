@@ -17,6 +17,55 @@ int assert(int expected, int actual, char *code) {
  * 
  */
 
+int local_variable_test1() {
+  int a;
+  a = 2;
+  return a;
+}
+
+int local_variable_test2() {
+  int x;
+  x = 4;
+  int y;
+  y = 2;
+  return x + y;
+}
+
+int local_variable_test3() {
+  int p;
+  int q;
+  int r;
+  p = q = 3;
+  r = 2;
+  return p + q * r;
+}
+
+int local_variable_test4() {
+  int foo;
+  foo = 5;
+  return foo;
+}
+
+int local_variable_test5() {
+  int bar;
+  bar = 2;
+  return bar * 3 + 2;
+}
+
+int local_variable_test6() {
+  int _foo123;
+  int bar;
+  _foo123 = 4;
+  bar = 2;
+  return _foo123 + bar;
+}
+
+int local_variable_test7() {
+  int Foo_123_bar;
+  Foo_123_bar = 3;
+  return (-Foo_123_bar + 5) * 2;
+}
+
 int foo() {
   return 5;
 }
@@ -104,6 +153,15 @@ int main() {
   assert(1, 1 >= 0, "1>=0");
   assert(1, 1 >= 1, "1>=1");
   assert(0, 1 >= 2, "1>=2");
+
+  // ローカル変数
+  assert(2, local_variable_test1(), "{int a; a=2; return a;}");
+  assert(6, local_variable_test2(), "{int x; x=4; int y; y=2; return x+y;}");
+  assert(9, local_variable_test3(), "{int p; int q; int r; p=q=3; r=2; return p+q*r;}");
+  assert(5, local_variable_test4(), "{int foo; foo=5; return foo;}");
+  assert(8, local_variable_test5(), "{int bar; bar=2; return bar*3+2;}");
+  assert(6, local_variable_test6(), "{int _foo123; int bar; _foo123=4; bar=2; return _foo123+bar;}");
+  assert(4, local_variable_test7(), "{int Foo_123_bar; Foo_123_bar=3; return (-Foo_123_bar+5)*2;}");
 
   // 関数
   assert(5, foo(), "foo()");
