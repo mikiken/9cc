@@ -235,7 +235,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       }
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
       if (declaration == NULL) {
-        error("関数が宣言されていません");
+        error("%s : 関数が宣言されていません", node->func_name);
       }
       Node *typed_node = new_typed_node(declaration->ret_type, node);
       return typed_node;

@@ -319,6 +319,7 @@ void gen_expr(Node *node) {
 
       for (int i = arg_count; i > 0; i--)
         pop(&arg_type[i - 1], arg_reg_kind(i));
+      printf("  mov al, 0\n"); // printfは可変長引数を取るので、関数呼び出し前に浮動小数点数の引数の個数をalにセットする必要がある
       printf("  call %s\n", node->func_name);
       push(node->type, RAX); // callした関数の返り値をスタックトップに積む
       return;

@@ -4,6 +4,8 @@ CFLAGS=-std=c11 -g -static
 SRCS=$(wildcard src/*.c)
 # SRCSの末尾を.oに置換した名前のファイルをオブジェクトファイルとして指定
 OBJS=$(SRCS:.c=.o)
+# テストのソースを指定
+TEST_SRCS=$(wildcard test/test_src/*.c)
 
 # 9ccの依存関係を指定し、それに対するルールを設定
 9cc: $(OBJS)
@@ -13,10 +15,8 @@ OBJS=$(SRCS:.c=.o)
 $(OBJS): src/9cc.h
 
 # testの依存関係を指定し、それに対するルールを設定
-ifeq (1,0)
 test: 9cc
-				test/test.sh
-endif
+				./test/test_driver.sh
 
 # cleanに対するルールを設定
 clean:
