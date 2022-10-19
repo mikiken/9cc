@@ -111,8 +111,40 @@ int combi(int n, int r) {
     return combi(n - 1, r - 1) + combi(n - 1, r);
 }
 
+int sizeof_test1() {
+  int x;
+  return sizeof(x);
+}
+
+int sizeof_test2() {
+  int x;
+  return sizeof(x + 2);
+}
+
+int sizeof_test3() {
+  int x;
+  return sizeof(x = 2);
+}
+
+int sizeof_test4() {
+  int x;
+  return sizeof x;
+}
+
+int sizeof_test5() {
+  int *x;
+  return sizeof(x);
+}
+
+int sizeof_test6() {
+  int x;
+  return sizeof(&x);
+}
+
 int global_variable1;
 int global_variable2[20];
+int *global_variable3;
+int *global_variable4[2];
 
 int global_variable_test1() {
   return global_variable1;
@@ -126,6 +158,23 @@ int global_variable_test3() {
   global_variable1 = 3;
   global_variable2[2] = 2;
   return global_variable1 + global_variable2[2];
+}
+
+int global_variable_test4() {
+  int x;
+  global_variable3 = &x;
+  x = 3;
+  return *global_variable3;
+}
+
+int global_variable_test5() {
+  int x;
+  int y;
+  x = 7;
+  y = 1;
+  global_variable4[0] = &x;
+  global_variable4[1] = &y;
+  return *global_variable4[0] + *global_variable4[1];
 }
 
 int main() {
@@ -193,10 +242,22 @@ int main() {
   assert(55, fib(10), "fib(10)");
   assert(15, combi(6, 2), "combi(6,2)");
 
+  // sizeof演算子
+  assert(4, sizeof_test1(), "{int x; return sizeof(x);}");
+  assert(4, sizeof_test2(), "{int x; return sizeof(x+2);}");
+  assert(4, sizeof_test3(), "{int x; return sizeof(x=2);}");
+  assert(4, sizeof_test4(), "{int x; return sizeof x;}");
+  assert(8, sizeof_test5(), "{int *x; return sizeof(x);}");
+  assert(8, sizeof_test6(), "{int x; return sizeof(&x);}");
+
   // グローバル変数
   assert(0, global_variable_test1(), "global_variable_test1()");
   assert(0, global_variable_test2(), "global_variable_test2()");
   assert(5, global_variable_test3(), "global_variable_test3()");
+  assert(3, global_variable_test4(), "global_variable_test4()");
+  assert(8, global_variable_test5(), "global_variable_test5()");
+  assert(4, sizeof(global_variable1), "sizeof(global_variable1)");
+  assert(80, sizeof(global_variable2), "sizeof(global_variable2)");
 
   printf("OK\n");
   return 0;
