@@ -111,6 +111,23 @@ int combi(int n, int r) {
     return combi(n - 1, r - 1) + combi(n - 1, r);
 }
 
+int global_variable1;
+int global_variable2[20];
+
+int global_variable_test1() {
+  return global_variable1;
+}
+
+int global_variable_test2() {
+  return global_variable2[2];
+}
+
+int global_variable_test3() {
+  global_variable1 = 3;
+  global_variable2[2] = 2;
+  return global_variable1 + global_variable2[2];
+}
+
 int main() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -175,7 +192,12 @@ int main() {
   assert(24, fact(4), "fact(4)");
   assert(55, fib(10), "fib(10)");
   assert(15, combi(6, 2), "combi(6,2)");
-  printf("OK\n");
 
+  // グローバル変数
+  assert(0, global_variable_test1(), "global_variable_test1()");
+  assert(0, global_variable_test2(), "global_variable_test2()");
+  assert(5, global_variable_test3(), "global_variable_test3()");
+
+  printf("OK\n");
   return 0;
 }
