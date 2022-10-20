@@ -281,14 +281,14 @@ int fact(int n) {
   return n * fact(n - 1);
 }
 
-int fib(int n) {
+int fib1(int n) {
   if (n == 1) {
     return 1;
   }
   if (n == 2) {
     return 1;
   }
-  return fib(n - 1) + fib(n - 2);
+  return fib1(n - 1) + fib1(n - 2);
 }
 
 int combi(int n, int r) {
@@ -328,6 +328,119 @@ int sizeof_test5() {
 int sizeof_test6() {
   int x;
   return sizeof(&x);
+}
+
+int array_test1() {
+  int a[2];
+  int *p;
+  p = a;
+  *p = 1;
+  *(p + 1) = 2;
+  return *p + *(p + 1);
+}
+
+int array_test2() {
+  int a;
+  a = 2;
+  int b[2];
+  int c;
+  c = 3;
+  int *p;
+  p = b;
+  *p = 1;
+  *(p + 1) = 2;
+  return a + *p + *(p + 1) + c;
+}
+
+int array_test3() {
+  int a[2];
+  *a = 2;
+  *(a + 1) = 3;
+  return *a + *(a + 1);
+}
+
+int array_test4() {
+  int a[2];
+  *a = 1;
+  *(a + 1) = 2;
+  int *p;
+  p = a;
+  return *p + *(p + 1);
+}
+
+int array_test5() {
+  int a[2];
+  *a = 1;
+  *(1 + a) = 2;
+  int *p;
+  p = a;
+  return *p + *(1 + p);
+}
+
+int array_test6() {
+  int a[3];
+  return sizeof(a);
+}
+
+int array_test7() {
+  int *a[3];
+  return sizeof(a);
+}
+
+int array_test8() {
+  int a[2];
+  a[0] = 2;
+  a[1] = 3;
+  return a[0] + a[1];
+}
+
+int array_test9() {
+  int a[2];
+  0 [a] = 2;
+  1 [a] = 3;
+  return 0 [a] + 1 [a];
+}
+
+int array_test10() {
+  int num;
+  num = 0;
+  int a[2];
+  a[0] = 1;
+  a[num + 1] = 2;
+  int *p;
+  p = a;
+  return *p + *(p + 1);
+}
+
+int array_test11() {
+  int a[2];
+  a[0] = 1;
+  a[a[0]] = 6;
+  int *p;
+  p = a;
+  return *p + *(p + 1);
+}
+
+int array_test12() {
+  int a;
+  a = 4;
+  int b[2];
+  int *p;
+  p = b;
+  *p = 1;
+  *(p + 1) = 3;
+  return a;
+}
+
+int fib2(int n) {
+  int fib[10];
+  fib[0] = 0;
+  fib[1] = 1;
+  int i;
+  for (i = 2; i < 10; i = i + 1) {
+    fib[i] = fib[i - 1] + fib[i - 2];
+  }
+  return fib[n];
 }
 
 int global_variable1;
@@ -459,7 +572,7 @@ int main() {
   assert(66, add6(add6(1, 2, 3, add2(1, 3), 5, 6), 7, 8, 9, 10, 11), "add6(add6(1,2,3,add2(1,3),5,6),7,8,9,10,11)");
   assert(5, ret3() + 2, "ret3()+2");
   assert(24, fact(4), "fact(4)");
-  assert(55, fib(10), "fib(10)");
+  assert(55, fib1(10), "fib1(10)");
   assert(15, combi(6, 2), "combi(6,2)");
 
   // sizeof演算子
@@ -469,6 +582,21 @@ int main() {
   assert(4, sizeof_test4(), "{int x; return sizeof x;}");
   assert(8, sizeof_test5(), "{int *x; return sizeof(x);}");
   assert(8, sizeof_test6(), "{int x; return sizeof(&x);}");
+
+  // 1次元配列
+  assert(3, array_test1(), "{int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *(p+1);}");
+  assert(8, array_test2(), "{int a; a = 2; int b[2]; int c; c = 3; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1) + c;}");
+  assert(5, array_test3(), "{int a[2]; *a = 2; *(a+1) = 3; return *a + *(a+1);}");
+  assert(3, array_test4(), "{int a[2]; *a = 1; *(a+1) = 2; int *p; p = a; return *p + *(p+1);}");
+  assert(3, array_test5(), "{int a[2]; *a = 1; *(1+a) = 2; int *p; p = a; return *p + *(1+p);}");
+  assert(12, array_test6(), "{int a[3]; return sizeof(a);}");
+  assert(24, array_test7(), "{int *a[3]; return sizeof(a);}");
+  assert(5, array_test8(), "{int a[2]; a[0] = 2; a[1] = 3; return a[0] + a[1];}");
+  assert(5, array_test9(), "{int a[2]; 0[a] = 2; 1[a] = 3; return 0[a] + 1[a];}");
+  assert(3, array_test10(), "{int num; num = 0; int a[2]; a[0] = 1; a[num+1] = 2; int *p; p = a; return *p + *(p+1);}");
+  assert(7, array_test11(), "{int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p + *(p+1);}");
+  assert(4, array_test12(), "{int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}");
+  assert(21, fib2(8), "fib(8)");
 
   // グローバル変数
   assert(0, global_variable_test1(), "global_variable_test1()");

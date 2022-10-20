@@ -20,7 +20,7 @@ test: 9cc
 
 # cleanに対するルールを設定
 clean:
-				rm -f 9cc src/*.o tmp* .gdb_history src/peda-session-*.txt .vscode/peda-session-*.txt
+				rm -f 9cc src/*.o tmp* .gdb_history peda-session-*.txt src/peda-session-*.txt .vscode/peda-session-*.txt
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定
 .PHONY: test clean
