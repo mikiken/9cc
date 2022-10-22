@@ -5,8 +5,11 @@ cat << EOT >> tmp.c
 EOT
 cc -c tmp.c
 
-./9cc test/test.c > test.s
-cc -c test.s
-cc -o tmp test.o tmp.o
+for file in test/*.c
+do
+  ./9cc ${file%.*}.c > ${file%.*}.s
+  cc -c ${file%.*}.s
+done
+cc -o tmp *.o
 ./tmp
-rm tmp test.o tmp.c tmp.o
+rm tmp *.o

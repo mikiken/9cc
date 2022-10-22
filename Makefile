@@ -4,8 +4,6 @@ CFLAGS=-std=c11 -g -static
 SRCS=$(wildcard src/*.c)
 # SRCSの末尾を.oに置換した名前のファイルをオブジェクトファイルとして指定
 OBJS=$(SRCS:.c=.o)
-# テストのソースを指定
-TEST_SRCS=$(wildcard test/test_src/*.c)
 
 # 9ccの依存関係を指定し、それに対するルールを設定
 9cc: $(OBJS)
@@ -20,7 +18,8 @@ test: 9cc
 
 # cleanに対するルールを設定
 clean:
-				rm -f 9cc src/*.o tmp* .gdb_history peda-session-*.txt src/peda-session-*.txt .vscode/peda-session-*.txt
+				rm -f 9cc .gdb_history src/*.o test/*.s
+				find ./ -name "peda-session-*.txt" -exec rm {} \;
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定
 .PHONY: test clean
