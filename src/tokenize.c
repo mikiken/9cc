@@ -67,6 +67,23 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    // 行コメントをスキップ
+    if (startswith(p, "//")) {
+      p += 2;
+      while (*p != '\n')
+        p++;
+      continue;
+    }
+
+    // ブロックコメントをスキップ
+    if (startswith(p, "/*")) {
+      char *end = strstr(p + 2, "*/");
+      if (!end)
+        error_at(p, "ブロックコメントが閉じていません");
+      p = end + 2;
+      continue;
+    }
+
     if (startswith(p, "==")) {
       cur = new_token(TK_EQUAL, cur, p, p + 1);
       p += 2;

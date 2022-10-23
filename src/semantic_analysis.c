@@ -18,10 +18,14 @@ FuncDeclaration *find_declaration_by_name(char *name) {
 
 Obj *find_gvar_by_name(char *name) {
   for (Obj *gvar = global_var_list; gvar != NULL; gvar = gvar->next) {
+    // 文字列リテラルは飛ばす
+    if (gvar->init_data)
+      continue;
     if (!name) {
       error("nameがNULLポインタです");
     }
-    if (!gvar->name) {
+    // 文字列リテラルでなく、グローバル変数の名前がNULLの場合はエラーにする
+    if (!gvar->init_data && !gvar->name) {
       error("gvar->nameがNULLポインタです");
     }
     //名前が一致している場合
@@ -235,7 +239,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       }
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
       if (declaration == NULL) {
-        error("関数が宣言されていません");
+        error("%s : 関数が宣言されていません", node->func_name);
       }
       Node *typed_node = new_typed_node(declaration->ret_type, node);
       return typed_node;

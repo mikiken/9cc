@@ -13,14 +13,13 @@ OBJS=$(SRCS:.c=.o)
 $(OBJS): src/9cc.h
 
 # testの依存関係を指定し、それに対するルールを設定
-ifeq (1,0)
 test: 9cc
-				test/test.sh
-endif
+				./test/test_driver.sh
 
 # cleanに対するルールを設定
 clean:
-				rm -f 9cc src/*.o tmp* .gdb_history peda-session-*.txt .vscode/peda-session-*.txt
+				rm -f 9cc .gdb_history src/*.o test/*.s
+				find ./ -name "peda-session-*.txt" -exec rm {} \;
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定
 .PHONY: test clean
