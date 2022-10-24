@@ -321,6 +321,13 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
         error("ポインタに対し乗法または除法を行うことはできません");
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
+    case ND_MOD: {
+      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      if (lhs->type->kind != TYPE_INT || rhs->type->kind != TYPE_INT)
+        error("剰余演算子の左辺または右辺がint型ではありません");
+      return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
+    }
     case ND_EQ:
     case ND_NE:
     case ND_LT:

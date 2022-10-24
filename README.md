@@ -15,7 +15,7 @@ $ make test
 ```
 
 # Implemented
-- `+` `-` `*` `/` operators
+- `+` `-` `*` `/` `%` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
 - unary `*` `&` operators
 - local variables
@@ -53,7 +53,7 @@ assign     = equality ("=" assign)?
 equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
-mul        = unary ("*" unary | "/" unary)*
+mul        = unary ("*" unary | "/" unary | "%" unary)*
 unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&") unary
 postfix    = primary ("[" expr "]")?
 primary    = num | ident args? | string | "(" expr ")"

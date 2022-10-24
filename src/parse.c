@@ -498,7 +498,7 @@ Node *add(Function *func, Token *tok) {
     else if (consume(tok, TK_MINUS))
       node = new_binary_node(ND_SUB, node, mul(func, tok));
     else
-      return node; // 数値のみの場合
+      return node;
   }
 }
 
@@ -510,8 +510,10 @@ Node *mul(Function *func, Token *tok) {
       node = new_binary_node(ND_MUL, node, unary(func, tok));
     else if (consume(tok, TK_SLASH))
       node = new_binary_node(ND_DIV, node, unary(func, tok));
+    else if (consume(tok, TK_PERCENT))
+      node = new_binary_node(ND_MOD, node, unary(func, tok));
     else
-      return node; // 数値のみの場合
+      return node;
   }
 }
 

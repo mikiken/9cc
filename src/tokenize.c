@@ -144,6 +144,12 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (startswith(p, "%")) {
+      cur = new_token(TK_PERCENT, cur, p, p);
+      p++;
+      continue;
+    }
+
     if (startswith(p, "=")) {
       cur = new_token(TK_ASSIGN, cur, p, p);
       p++;

@@ -54,6 +54,7 @@ typedef enum {
   TK_MINUS,             // -
   TK_ASTERISK,          // *
   TK_SLASH,             // /
+  TK_PERCENT,           // %
   TK_ASSIGN,            // =
   TK_SEMICOLON,         // ;
   TK_COMMA,             // ,
@@ -97,6 +98,7 @@ typedef enum {
   ND_SUB,     // -
   ND_MUL,     // *
   ND_DIV,     // /
+  ND_MOD,     // %
   ND_EQ,      // ==
   ND_NE,      // !=
   ND_LT,      // <

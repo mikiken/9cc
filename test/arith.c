@@ -75,6 +75,11 @@ int arith_test() {
   assert(1, 1 >= 1, "1>=1");
   assert(0, 1 >= 2, "1>=2");
 
+  // '%' 演算子
+  assert(1, 5 % 2, "5 % 2");
+  assert(9, (4 + 5) % 10, "9 % 10");
+  assert(0, (3 + 8 * 4) % 7, "(3 + 8 * 4) % 7");
+
   // sizeof演算子
   assert(4, sizeof_test1(), "{int x; return sizeof(x);}");
   assert(4, sizeof_test2(), "{int x; return sizeof(x+2);}");

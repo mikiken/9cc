@@ -346,6 +346,11 @@ void gen_expr(Node *node) {
       printf("  cqo\n"); // rdx:raxとして128bit整数に拡張
       printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       break;
+    case ND_MOD:
+      printf("  cqo\n");
+      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
+      printf("  mov rax, rdx\n");
+      break;
     case ND_EQ:
       printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  sete al\n");
