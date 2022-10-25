@@ -56,6 +56,11 @@ typedef enum {
   TK_SLASH,             // /
   TK_PERCENT,           // %
   TK_ASSIGN,            // =
+  TK_ADD_ASSIGN,        // +=
+  TK_SUB_ASSIGN,        // -=
+  TK_MUL_ASSIGN,        // *=
+  TK_DIV_ASSIGN,        // /=
+  TK_MOD_ASSIGN,        // %=
   TK_SEMICOLON,         // ;
   TK_COMMA,             // ,
   TK_AND,               // &

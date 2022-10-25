@@ -120,6 +120,36 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (startswith(p, "+=")) {
+      cur = new_token(TK_ADD_ASSIGN, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "-=")) {
+      cur = new_token(TK_SUB_ASSIGN, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "*=")) {
+      cur = new_token(TK_MUL_ASSIGN, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "/=")) {
+      cur = new_token(TK_DIV_ASSIGN, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "%=")) {
+      cur = new_token(TK_MOD_ASSIGN, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
     if (startswith(p, "+")) {
       cur = new_token(TK_PLUS, cur, p, p);
       p++;

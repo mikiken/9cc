@@ -32,6 +32,41 @@ int sizeof_test6() {
   return sizeof(&x);
 }
 
+int compound_assignment_operator_test1() {
+  int i;
+  i = 1;
+  i += 1 + 2 * 3;
+  return i;
+}
+
+int compound_assignment_operator_test2() {
+  int i;
+  i = 10;
+  i -= 3 + 5 % 2;
+  return i;
+}
+
+int compound_assignment_operator_test3() {
+  int i;
+  i = 2;
+  i *= 3 + 5 % 2;
+  return i;
+}
+
+int compound_assignment_operator_test4() {
+  int i;
+  i = 8;
+  i /= 3 + 5 % 2;
+  return i;
+}
+
+int compound_assignment_operator_test5() {
+  int i;
+  i = 5;
+  i %= 3 + 5 % 2;
+  return i;
+}
+
 int arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -87,6 +122,13 @@ int arith_test() {
   assert(4, sizeof_test4(), "{int x; return sizeof x;}");
   assert(8, sizeof_test5(), "{int *x; return sizeof(x);}");
   assert(8, sizeof_test6(), "{int x; return sizeof(&x);}");
+
+  // '+=' '-=' '*=' '/=' '%=' 演算子
+  assert(8, compound_assignment_operator_test1(), "{int i; i = 1; i += 1 + 2 * 3; return i;}");
+  assert(6, compound_assignment_operator_test2(), "{int i; i = 10; i -= 3 + 5 % 2; return i;}");
+  assert(8, compound_assignment_operator_test3(), "{int i; i = 2; i *= 3 + 5 % 2; return i;}");
+  assert(2, compound_assignment_operator_test4(), "{int i; i = 8; i /= 3 + 5 % 2; return i;}");
+  assert(1, compound_assignment_operator_test5(), "{int i; i = 5; i %= 3 + 5 % 2; return i;}");
 
   printf("All arithmetical test cases have passed.\n\n");
   return 0;

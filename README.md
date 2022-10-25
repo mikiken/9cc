@@ -15,7 +15,7 @@ $ make test
 ```
 
 # Implemented
-- `+` `-` `*` `/` `%` operators
+- `+` `-` `*` `/` `%` `+=` `-=` `*=` `/=` `%=` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
 - unary `*` `&` operators
 - local variables
@@ -49,7 +49,7 @@ stmt       = expr ";"
            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
            | "return" expr ";"
 expr       = assign | type ident("[" num "]")?
-assign     = equality ("=" assign)?
+assign     = equality | equality ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
 equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*

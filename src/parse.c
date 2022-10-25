@@ -456,6 +456,16 @@ Node *assign(Function *func, Token *tok) {
   Node *node = equality(func, tok);
   if (consume(tok, TK_ASSIGN))
     node = new_binary_node(ND_ASSIGN, node, assign(func, tok));
+  else if (consume(tok, TK_ADD_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_ADD, node, assign(func, tok)));
+  else if (consume(tok, TK_SUB_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_SUB, node, assign(func, tok)));
+  else if (consume(tok, TK_MUL_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_MUL, node, assign(func, tok)));
+  else if (consume(tok, TK_DIV_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_DIV, node, assign(func, tok)));
+  else if (consume(tok, TK_MOD_ASSIGN))
+    node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_MOD, node, assign(func, tok)));
   return node;
 }
 
