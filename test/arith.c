@@ -67,6 +67,52 @@ int compound_assignment_operator_test5() {
   return i;
 }
 
+int pre_increment_operator_test1() {
+  int i;
+  i = 1;
+  return ++i + 2;
+}
+
+int pre_increment_operator_test2() {
+  int i;
+  i = 2;
+  i = ++i;
+  return i;
+}
+
+int pre_increment_operator_test3() {
+  int i;
+  int sum;
+  sum = 0;
+  for (i = 1; i <= 10; ++i) {
+    sum += i;
+  }
+  return sum;
+}
+
+int pre_decrement_operator_test1() {
+  int i;
+  i = 4;
+  return --i - 1;
+}
+
+int pre_decrement_operator_test2() {
+  int i;
+  i = 10;
+  i = --i;
+  return i;
+}
+
+int pre_decrement_operator_test3() {
+  int i;
+  int sum;
+  sum = 100;
+  for (i = 10; i > 0; --i) {
+    sum -= i;
+  }
+  return sum;
+}
+
 int arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -129,6 +175,14 @@ int arith_test() {
   assert(8, compound_assignment_operator_test3(), "{int i; i = 2; i *= 3 + 5 % 2; return i;}");
   assert(2, compound_assignment_operator_test4(), "{int i; i = 8; i /= 3 + 5 % 2; return i;}");
   assert(1, compound_assignment_operator_test5(), "{int i; i = 5; i %= 3 + 5 % 2; return i;}");
+
+  // 前置 '++' '--' 演算子
+  assert(4, pre_increment_operator_test1(), "{int i; i = 1; return ++i + 2;}");
+  assert(3, pre_increment_operator_test2(), "{int i; i = 2; i = ++i; return i;}");
+  assert(55, pre_increment_operator_test3(), "{int i; int sum; sum = 0; for (i = 1; i <= 10; ++i) { sum += i; } return sum;}");
+  assert(2, pre_decrement_operator_test1(), "{int i; i = 4; return --i - 1;}");
+  assert(9, pre_decrement_operator_test2(), "{int i; i = 10; i = --i; return i;}");
+  assert(45, pre_decrement_operator_test3(), "{int i; int sum; sum = 100; for (i = 10; i > 0; --i) { sum -= i; } return sum;}");
 
   printf("All arithmetical test cases have passed.\n\n");
   return 0;

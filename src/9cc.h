@@ -61,6 +61,8 @@ typedef enum {
   TK_MUL_ASSIGN,        // *=
   TK_DIV_ASSIGN,        // /=
   TK_MOD_ASSIGN,        // %=
+  TK_INCREMENT,         // ++
+  TK_DECREMENT,         // --
   TK_SEMICOLON,         // ;
   TK_COMMA,             // ,
   TK_AND,               // &

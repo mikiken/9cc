@@ -533,19 +533,27 @@ Node *unary(Function *func, Token *tok) {
     node->lhs = unary(func, tok);
     return node;
   }
-  if (consume(tok, TK_PLUS))
+  else if (consume(tok, TK_PLUS))
     return new_binary_node(ND_ADD, new_num_node(0), unary(func, tok));
-  if (consume(tok, TK_MINUS))
+  else if (consume(tok, TK_MINUS))
     return new_binary_node(ND_SUB, new_num_node(0), unary(func, tok));
-  if (consume(tok, TK_ASTERISK)) {
+  else if (consume(tok, TK_ASTERISK)) {
     Node *node = new_node(ND_DEREF);
     node->lhs = unary(func, tok);
     return node;
   }
-  if (consume(tok, TK_AND)) {
+  else if (consume(tok, TK_AND)) {
     Node *node = new_node(ND_ADDR);
     node->lhs = unary(func, tok);
     return node;
+  }
+  else if (consume(tok, TK_INCREMENT)) {
+    Node *lhs = unary(func, tok);
+    return new_binary_node(ND_ASSIGN, lhs, new_binary_node(ND_ADD, lhs, new_num_node(1)));
+  }
+  else if (consume(tok, TK_DECREMENT)) {
+    Node *lhs = unary(func, tok);
+    return new_binary_node(ND_ASSIGN, lhs, new_binary_node(ND_SUB, lhs, new_num_node(1)));
   }
   return postfix(func, tok);
 }

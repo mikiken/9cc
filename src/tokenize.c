@@ -150,6 +150,18 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (startswith(p, "++")) {
+      cur = new_token(TK_INCREMENT, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
+    if (startswith(p, "--")) {
+      cur = new_token(TK_DECREMENT, cur, p, p + 1);
+      p += 2;
+      continue;
+    }
+
     if (startswith(p, "+")) {
       cur = new_token(TK_PLUS, cur, p, p);
       p++;
