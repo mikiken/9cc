@@ -17,7 +17,7 @@ $ make test
 # Implemented
 - `+` `-` `*` `/` `%` operators
 - `+=` `-=` `*=` `/=` `%=` operators
-- pre `++` `--` operators
+- `++` `--` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
 - unary `*` `&` operators
 - local variables
@@ -57,7 +57,7 @@ relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary | "%" unary)*
 unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--") unary
-postfix    = primary ("[" expr "]")?
+postfix    = primary ("[" expr "]" | "++" | "--")?
 primary    = num | ident args? | string | "(" expr ")"
 args       = "(" (expr ("," expr)*)? ")"
 ```

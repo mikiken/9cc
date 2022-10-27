@@ -113,6 +113,22 @@ int pre_decrement_operator_test3() {
   return sum;
 }
 
+int post_increment_operator_test1() {
+  int x;
+  int i;
+  i = 10;
+  x = i++;
+  return x + i;
+}
+
+int post_decrement_operator_test1() {
+  int x;
+  int i;
+  i = 10;
+  x = i--;
+  return x + i;
+}
+
 int arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -183,6 +199,10 @@ int arith_test() {
   assert(2, pre_decrement_operator_test1(), "{int i; i = 4; return --i - 1;}");
   assert(9, pre_decrement_operator_test2(), "{int i; i = 10; i = --i; return i;}");
   assert(45, pre_decrement_operator_test3(), "{int i; int sum; sum = 100; for (i = 10; i > 0; --i) { sum -= i; } return sum;}");
+
+  // 後置 '++' '--' 演算子
+  assert(21, post_increment_operator_test1(), "{int x; int i; i = 10; x = i++; return x + i;}");
+  assert(19, post_decrement_operator_test1(), "{int x; int i; i = 10; x = i--; return x + i;}");
 
   printf("All arithmetical test cases have passed.\n\n");
   return 0;

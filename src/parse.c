@@ -564,6 +564,12 @@ Node *postfix(Function *func, Token *tok) {
     node = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, node, expr(func, tok)), NULL);
     expect(tok, TK_RIGHT_BRACKET);
   }
+  // (a += 1) - 1としてパース
+  else if (consume(tok, TK_INCREMENT))
+    node = new_binary_node(ND_SUB, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_ADD, node, new_num_node(1))), new_num_node(1));
+  // (a -= 1) + 1としてパース
+  else if (consume(tok, TK_DECREMENT))
+    node = new_binary_node(ND_ADD, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_SUB, node, new_num_node(1))), new_num_node(1));
   return node;
 }
 
