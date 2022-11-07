@@ -129,6 +129,15 @@ int post_decrement_operator_test1() {
   return x + i;
 }
 
+int not_operator_test1() {
+  int x;
+  x = 100;
+  if (!x)
+    return 3;
+  else
+    return 8;
+}
+
 int arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -203,6 +212,11 @@ int arith_test() {
   // 後置 '++' '--' 演算子
   assert(21, post_increment_operator_test1(), "{int x; int i; i = 10; x = i++; return x + i;}");
   assert(19, post_decrement_operator_test1(), "{int x; int i; i = 10; x = i--; return x + i;}");
+
+  // '!' 演算子
+  assert(0, !1, "{return !1;}");
+  assert(1, !0, "{return !0;}");
+  assert(8, not_operator_test1(), "{int x; x = 100; if (!x) return 3; else return 8;}");
 
   printf("All arithmetical test cases have passed.\n\n");
   return 0;

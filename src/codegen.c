@@ -307,6 +307,14 @@ void gen_expr(Node *node) {
     case ND_ADDR:
       gen_addr(node->lhs); // lhsのアドレスを生成
       return;
+    case ND_NOT:
+      gen_expr(node->lhs);
+      pop(node->lhs->type, RAX);
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
+      printf("  sete al\n");
+      printf("  movzb rax, al\n");
+      push(new_type(TYPE_INT), RAX);
+      return;
     case ND_FUNCALL: {
       int arg_count = 0;
       Type arg_type[6]; // 現状引数6つまでの関数呼び出しにのみ対応しているため要素数は6でよい

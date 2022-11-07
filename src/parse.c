@@ -555,6 +555,11 @@ Node *unary(Function *func, Token *tok) {
     Node *lhs = unary(func, tok);
     return new_binary_node(ND_ASSIGN, lhs, new_binary_node(ND_SUB, lhs, new_num_node(1)));
   }
+  else if (consume(tok, TK_LOGICAL_NOT)) {
+    Node *node = new_node(ND_NOT);
+    node->lhs = unary(func, tok);
+    return node;
+  }
   return postfix(func, tok);
 }
 

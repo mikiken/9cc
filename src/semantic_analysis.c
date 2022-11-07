@@ -338,6 +338,10 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
         error("異なる型に対して比較を行うことはできません");
       return new_typed_binary(new_typed_node(new_type(lhs->type->kind), node), lhs, rhs);
     }
+    case ND_NOT: {
+      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, NULL);
+    }
     default:
       error("nodeに型を付与することができませんでした");
   }

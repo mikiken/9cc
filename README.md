@@ -19,6 +19,7 @@ $ make test
 - `+=` `-=` `*=` `/=` `%=` operators
 - `++` `--` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
+- '!' operator
 - unary `*` `&` operators
 - local variables
 - global variables
@@ -56,7 +57,7 @@ equality   = relational ("==" relational | "!=" relational)*
 relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 add        = mul ("+" mul | "-" mul)*
 mul        = unary ("*" unary | "/" unary | "%" unary)*
-unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--") unary
+unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--" | "!") unary
 postfix    = primary ("[" expr "]" | "++" | "--")?
 primary    = num | ident args? | string | "(" expr ")"
 args       = "(" (expr ("," expr)*)? ")"

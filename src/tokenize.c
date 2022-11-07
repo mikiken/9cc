@@ -120,6 +120,12 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (startswith(p, "!")) {
+      cur = new_token(TK_LOGICAL_NOT, cur, p, p);
+      p++;
+      continue;
+    }
+
     if (startswith(p, "+=")) {
       cur = new_token(TK_ADD_ASSIGN, cur, p, p + 1);
       p += 2;
