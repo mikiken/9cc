@@ -379,6 +379,24 @@ void gen_expr(Node *node) {
       printf("  setle al\n");
       printf("  movzb rax, al\n");
       break;
+    case ND_AND:
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
+      printf("  setne bl\n");
+      printf("  movzb rbx, bl\n");
+      printf("  and rax, rbx\n");
+      break;
+    case ND_OR:
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
+      printf("  setne bl\n");
+      printf("  movzb rbx, bl\n");
+      printf("  or rax, rbx\n");
+      break;
   }
   push(node->type, RAX);
 }

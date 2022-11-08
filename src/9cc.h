@@ -51,6 +51,8 @@ typedef enum {
   TK_LESS,              // <
   TK_GREATER,           // >
   TK_LOGICAL_NOT,       // !
+  TK_LOGICAL_AND,       // &&
+  TK_LOGICAL_OR,        // ||
   TK_PLUS,              // +
   TK_MINUS,             // -
   TK_ASTERISK,          // *
@@ -112,6 +114,8 @@ typedef enum {
   ND_LT,      // <
   ND_LE,      // <=
   ND_NOT,     // !
+  ND_AND,     // &&
+  ND_OR,      // ||
   ND_ASSIGN,  // =
   ND_NUM,     // 整数
   ND_STR,     // 文字列リテラル

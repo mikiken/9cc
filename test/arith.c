@@ -218,6 +218,17 @@ int arith_test() {
   assert(1, !0, "{return !0;}");
   assert(8, not_operator_test1(), "{int x; x = 100; if (!x) return 3; else return 8;}");
 
+  // '&&' '||' 演算子
+  assert(0, 0 && 0, "{return 0 && 0;}");
+  assert(0, 0 && 1, "{return 0 && 1;}");
+  assert(0, 1 && 0, "{return 1 && 0;}");
+  assert(1, 1 && 1, "{return 1 && 1;}");
+  assert(0, 0 || 0, "{return 0 || 0;}");
+  assert(1, 0 || 1, "{return 0 || 1;}");
+  assert(1, 1 || 0, "{return 1 || 0;}");
+  assert(1, 1 || 1, "{return 1 || 1;}");
+  assert(1, !(1 && 2) || !5 && (3 && 0 == 2) || 8 >= 2, "{return !(1 && 2) || !5 && (3 && 0 == 2) || 8 >= 2;}");
+
   printf("All arithmetical test cases have passed.\n\n");
   return 0;
 }

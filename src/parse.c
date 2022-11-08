@@ -320,6 +320,9 @@ Function *program();
 Node *stmt();
 Node *expr();
 Node *assign();
+Node *conditional();
+Node *logical_or();
+Node *logical_and();
 Node *equality();
 Node *relational();
 Node *add();
@@ -453,7 +456,7 @@ Node *expr(Function *func, Token *tok) {
 }
 
 Node *assign(Function *func, Token *tok) {
-  Node *node = equality(func, tok);
+  Node *node = conditional(func, tok);
   if (consume(tok, TK_ASSIGN))
     node = new_binary_node(ND_ASSIGN, node, assign(func, tok));
   else if (consume(tok, TK_ADD_ASSIGN))
@@ -467,6 +470,32 @@ Node *assign(Function *func, Token *tok) {
   else if (consume(tok, TK_MOD_ASSIGN))
     node = new_binary_node(ND_ASSIGN, node, new_binary_node(ND_MOD, node, assign(func, tok)));
   return node;
+}
+
+Node *conditional(Function *func, Token *tok) {
+  return logical_or(func, tok);
+}
+
+Node *logical_or(Function *func, Token *tok) {
+  Node *node = logical_and(func, tok);
+
+  while (true) {
+    if (consume(tok, TK_LOGICAL_OR))
+      node = new_binary_node(ND_OR, node, logical_and(func, tok));
+    else
+      return node;
+  }
+}
+
+Node *logical_and(Function *func, Token *tok) {
+  Node *node = equality(func, tok);
+
+  while (true) {
+    if (consume(tok, TK_LOGICAL_AND))
+      node = new_binary_node(ND_AND, node, equality(func, tok));
+    else
+      return node;
+  }
 }
 
 Node *equality(Function *func, Token *tok) {

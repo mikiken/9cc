@@ -19,7 +19,7 @@ $ make test
 - `+=` `-=` `*=` `/=` `%=` operators
 - `++` `--` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
-- '!' operator
+- `!` `&&` `||` operators
 - unary `*` `&` operators
 - local variables
 - global variables
@@ -40,25 +40,28 @@ $ make test
 
 # BNF
 ```
-program    = (global_var | func_def)*
-grobal_var = type ident("[" num "]")? ";"
-func_def   = type ident params "{" stmt* "}"
-type       = ("int" | "char") "*"*
-params     = "(" (type ident ("," type ident)*)? ")"
-stmt       = expr ";"
-           | "{" stmt* "}"
-           | "if" "(" expr ")" stmt ("else" stmt)?
-           | "while" "(" expr ")" stmt
-           | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-           | "return" expr ";"
-expr       = assign | type ident("[" num "]")?
-assign     = equality | equality ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
-equality   = relational ("==" relational | "!=" relational)*
-relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-add        = mul ("+" mul | "-" mul)*
-mul        = unary ("*" unary | "/" unary | "%" unary)*
-unary      = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--" | "!") unary
-postfix    = primary ("[" expr "]" | "++" | "--")?
-primary    = num | ident args? | string | "(" expr ")"
-args       = "(" (expr ("," expr)*)? ")"
+program     = (global_var | func_def)*
+grobal_var  = type ident("[" num "]")? ";"
+func_def    = type ident params "{" stmt* "}"
+type        = ("int" | "char") "*"*
+params      = "(" (type ident ("," type ident)*)? ")"
+stmt        = expr ";"
+            | "{" stmt* "}"
+            | "if" "(" expr ")" stmt ("else" stmt)?
+            | "while" "(" expr ")" stmt
+            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+            | "return" expr ";"
+expr        = assign | type ident("[" num "]")?
+assign      = conditional | conditional ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
+conditional = logical_or
+logical_or  = logical_and ("||" logical_and)*
+logical_and = equality ("&&" equality)*
+equality    = relational ("==" relational | "!=" relational)*
+relational  = add ("<" add | "<=" add | ">" add | ">=" add)*
+add         = mul ("+" mul | "-" mul)*
+mul         = unary ("*" unary | "/" unary | "%" unary)*
+unary       = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--" | "!") unary
+postfix     = primary ("[" expr "]" | "++" | "--")?
+primary     = num | ident args? | string | "(" expr ")"
+args        = "(" (expr ("," expr)*)? ")"
 ```
