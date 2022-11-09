@@ -229,6 +229,10 @@ int arith_test() {
   assert(1, 1 || 1, "{return 1 || 1;}");
   assert(1, !(1 && 2) || !5 && (3 && 0 == 2) || 8 >= 2, "{return !(1 && 2) || !5 && (3 && 0 == 2) || 8 >= 2;}");
 
+  // '?:' 演算子 (conditional operator)
+  assert(2, !1 ? 1 : 2, "{return !1 ? 1 : 2;}");
+  assert(1, !0 ? 1 : 2, "{return !0 ? 1 : 2;}");
+
   printf("All arithmetical test cases have passed.\n\n");
   return 0;
 }

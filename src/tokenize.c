@@ -234,6 +234,18 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (startswith(p, "?")) {
+      cur = new_token(TK_QUESTION, cur, p, p);
+      p++;
+      continue;
+    }
+
+    if (startswith(p, ":")) {
+      cur = new_token(TK_COLON, cur, p, p);
+      p++;
+      continue;
+    }
+
     if (startswith(p, "(")) {
       cur = new_token(TK_LEFT_PARENTHESIS, cur, p, p);
       p++;

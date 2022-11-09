@@ -348,6 +348,13 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
+    case ND_COND: {
+      Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
+      typed_node->cond = add_type_to_node(lvar_list, node->cond);
+      typed_node->then = add_type_to_node(lvar_list, node->then);
+      typed_node->els = add_type_to_node(lvar_list, node->els);
+      return typed_node;
+    }
     default:
       error("nodeに型を付与することができませんでした");
   }

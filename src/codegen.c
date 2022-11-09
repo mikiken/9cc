@@ -315,6 +315,19 @@ void gen_expr(Node *node) {
       printf("  movzb rax, al\n");
       push(new_type(TYPE_INT), RAX);
       return;
+    case ND_COND: {
+      int label = label_count++;
+      gen_expr(node->cond);
+      pop(node->cond->type, RAX);
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->cond->type)));
+      printf("  je  .L.else.%d\n", label);
+      gen_expr(node->then);
+      printf("  jmp .L.end.%d\n", label);
+      printf(".L.else.%d:\n", label);
+      gen_expr(node->els);
+      printf(".L.end.%d:\n", label);
+      return;
+    }
     case ND_FUNCALL: {
       int arg_count = 0;
       Type arg_type[6]; // 現状引数6つまでの関数呼び出しにのみ対応しているため要素数は6でよい

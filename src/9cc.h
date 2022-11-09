@@ -69,6 +69,8 @@ typedef enum {
   TK_SEMICOLON,         // ;
   TK_COMMA,             // ,
   TK_AND,               // &
+  TK_QUESTION,          // ?
+  TK_COLON,             // :
   TK_LEFT_PARENTHESIS,  // (
   TK_RIGHT_PARENTHESIS, // )
   TK_LEFT_BRACE,        // {
@@ -116,6 +118,7 @@ typedef enum {
   ND_NOT,     // !
   ND_AND,     // &&
   ND_OR,      // ||
+  ND_COND,    // ?: (conditional operator)
   ND_ASSIGN,  // =
   ND_NUM,     // 整数
   ND_STR,     // 文字列リテラル

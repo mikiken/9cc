@@ -473,7 +473,20 @@ Node *assign(Function *func, Token *tok) {
 }
 
 Node *conditional(Function *func, Token *tok) {
-  return logical_or(func, tok);
+  Node *cond = logical_or(func, tok);
+
+  // conditional operator
+  if (consume(tok, TK_QUESTION)) {
+    Node *node = new_node(ND_COND);
+    node->cond = cond;
+    node->then = expr(func, tok);
+    expect(tok, TK_COLON);
+    node->els = conditional(func, tok);
+    return node;
+  }
+  else {
+    return cond;
+  }
 }
 
 Node *logical_or(Function *func, Token *tok) {

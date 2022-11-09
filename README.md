@@ -20,6 +20,7 @@ $ make test
 - `++` `--` operators
 - `<` `<=` `>` `>=` `==` `!=` operators
 - `!` `&&` `||` operators
+- `?:` operator
 - unary `*` `&` operators
 - local variables
 - global variables
@@ -53,7 +54,7 @@ stmt        = expr ";"
             | "return" expr ";"
 expr        = assign | type ident("[" num "]")?
 assign      = conditional | conditional ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
-conditional = logical_or
+conditional = logical_or ("?" expr ":" conditional)?
 logical_or  = logical_and ("||" logical_and)*
 logical_and = equality ("&&" equality)*
 equality    = relational ("==" relational | "!=" relational)*
