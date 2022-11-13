@@ -60,18 +60,17 @@ char char_type_test8() {
   return sub_char(7, 3, 3);
 }
 
-int string_literal_test1() {
+void string_literal_test1() {
   char *str;
   str = "Hello, implementation-defined behavior!";
   puts(str);
-  return 0;
 }
 
-int string_literal_test2() {
+void string_literal_test2() {
   char *str;
   str = "Hello, implementation-defined behavior!\n";
   puts(str);
-  return 0;
+  return;
 }
 
 int string_test() {
@@ -93,7 +92,7 @@ int string_test() {
   assert(0, ""[0], "\"\"[0]");
   assert(4, sizeof("abc"), "sizeof(\"abc\")");
   assert(1, sizeof(""), "sizeof(\"\")");
-  assert(0, string_literal_test1(), "{char *str; str = \"Hello, implementation-defined behavior!\"; puts(str); return 0;}");
+  string_literal_test1();
 
   // エスケープシーケンス
   assert(7, "\a"[0], "{return \"\\a\"[0];}");
@@ -108,7 +107,7 @@ int string_test() {
   assert(92, "\\"[0], "{return \"\\\\\"[0];}");
   assert(27, "\e"[0], "{return \"\\e\"[0];}");
   assert(34, "\""[0], "{return \"\\\"\"[0];}");
-  assert(0, string_literal_test2(), "{char *str; str = \"Hello, implementation-defined behavior!\\n\"; puts(str); return 0;}");
+  string_literal_test2();
 
   printf("All string test cases have passed.\n\n");
   return 0;

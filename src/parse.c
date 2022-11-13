@@ -156,15 +156,14 @@ Node *var_node(Function *func, Token *var_name) {
 
 Type *parse_base_type(Token *tok) {
   Type *base_type = calloc(1, sizeof(Type));
-  if (consume(tok, TK_INT)) {
+  if (consume(tok, TK_INT))
     base_type->kind = TYPE_INT;
-  }
-  else if (consume(tok, TK_CHAR)) {
+  else if (consume(tok, TK_CHAR))
     base_type->kind = TYPE_CHAR;
-  }
-  else {
+  else if (consume(tok, TK_VOID))
+    base_type->kind = TYPE_VOID;
+  else
     base_type->kind = TYPE_NULL;
-  }
   return base_type;
 }
 
@@ -294,11 +293,23 @@ Obj *init_params_head(Function *func) {
 }
 
 void parse_parameter(Function *func, Token *tok) {
-  if (!consume(tok, TK_RIGHT_PARENTHESIS)) {
+  // func_name(void) の場合
+  if (consume(tok, TK_VOID)) {
+    expect(tok, TK_RIGHT_PARENTHESIS);
+    return;
+  }
+  // func_name() の場合
+  else if (consume(tok, TK_RIGHT_PARENTHESIS))
+    return;
+  // 引数ありの場合
+  else {
     Obj *cur_param = init_params_head(func);
     do {
       cur_param->next = calloc(1, sizeof(Obj));
-      cur_param->next->type = parse_type(tok); // parameterの型
+      Type *type = parse_type(tok);
+      if (type->kind == TYPE_VOID)
+        error_at(tok->start, "void型の引数を定義することはできません");
+      cur_param->next->type = type; // parameterの型
       cur_param->next->name = calloc(tok->len + 1, sizeof(char));
       memcpy(cur_param->next->name, tok->start, tok->len);
       cur_param->next->len = tok->len;
@@ -394,8 +405,14 @@ Node *stmt(Function *func, Token *tok) {
 
   else if (consume(tok, TK_RETURN)) {
     node = new_node(ND_RETURN);
-    node->lhs = expr(func, tok);
-    expect(tok, TK_SEMICOLON);
+    // return; となる場合 (void型)
+    if (consume(tok, TK_SEMICOLON)) {
+      return node;
+    }
+    else {
+      node->lhs = expr(func, tok);
+      expect(tok, TK_SEMICOLON);
+    }
   }
 
   else if (consume(tok, TK_WHILE)) {
@@ -443,6 +460,8 @@ Node *stmt(Function *func, Token *tok) {
 Node *expr(Function *func, Token *tok) {
   Type *ty = parse_type(tok);
   if (ty != NULL) {
+    if (ty->kind == TYPE_VOID)
+      error_at(tok->start, "void型の変数を定義することはできません");
     Node *node = new_lvar_definition(func, ty, tok);
     // 配列の場合
     if (ty->kind == TYPE_ARRAY)

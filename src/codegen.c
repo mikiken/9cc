@@ -225,8 +225,10 @@ void gen_stmt(Function *func, Node *node) {
         gen_stmt(func, n->body);
       return;
     case ND_RETURN:
-      gen_expr(node->lhs);
-      pop(node->lhs->type, RAX);
+      if (node->lhs) {
+        gen_expr(node->lhs);
+        pop(node->lhs->type, RAX);
+      }
       printf("  jmp .L.return.%s\n", func->name);
       return;
     case ND_IF: {

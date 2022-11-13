@@ -47,6 +47,19 @@ int combi(int n, int r) {
     return combi(n - 1, r - 1) + combi(n - 1, r);
 }
 
+void void_test1(void) {
+  printf("This is a test case of void type.\n");
+}
+
+void void_test2(int x) {
+  if (x >= 2) {
+    printf("Argument x is equal to or greater than 2.\n");
+    return;
+  }
+  else
+    printf("Argument x is less than 2.\n");
+}
+
 int function_test() {
   // 関数
   assert(5, foo(), "foo()");
@@ -60,6 +73,9 @@ int function_test() {
   assert(24, fact(4), "fact(4)");
   assert(55, fib1(10), "fib1(10)");
   assert(15, combi(6, 2), "combi(6,2)");
+  void_test1();  // => This is a test case of void type.
+  void_test2(3); // => Argument x is equal to or greater than 2.
+  void_test2(1); // => Argument x is less than 2.
 
   printf("All function test cases have passed.\n\n");
   return 0;

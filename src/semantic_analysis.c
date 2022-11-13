@@ -199,8 +199,12 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_node(new_type(TYPE_INT), size_node);
     }
     case ND_RETURN: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      return new_typed_binary(new_typed_node(new_type(lhs->type->kind), node), lhs, NULL);
+      if (node->lhs) {
+        Node *lhs = add_type_to_node(lvar_list, node->lhs);
+        return new_typed_binary(new_typed_node(new_type(lhs->type->kind), node), lhs, NULL);
+      }
+      else
+        return new_typed_node(new_type(TYPE_NULL), node);
     }
     case ND_IF: {
       Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);

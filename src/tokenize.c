@@ -324,6 +324,12 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (is_keyword(p, "void")) {
+      cur = new_token(TK_VOID, cur, p, p + 3);
+      p += 4;
+      continue;
+    }
+
     if (is_keyword(p, "sizeof")) {
       cur = new_token(TK_SIZEOF, cur, p, p + 5);
       p += 6;

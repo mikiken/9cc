@@ -30,8 +30,7 @@ $ make test
 - `{…}` compound statements (blocks)
 - function call and definition with up to 6 args
 - function declaration without type checking
-- `int` type
-- `char` type
+- `int` `char` `void` type
 - string literal
 - pointer type
 - pointer add and sub
@@ -44,14 +43,14 @@ $ make test
 program     = (global_var | func_def)*
 grobal_var  = type ident("[" num "]")? ";"
 func_def    = type ident params "{" stmt* "}"
-type        = ("int" | "char") "*"*
-params      = "(" (type ident ("," type ident)*)? ")"
+type        = ("int" | "char" | "void") "*"*
+params      = "(" ((type ident ("," type ident)*) | "void")? ")"
 stmt        = expr ";"
             | "{" stmt* "}"
             | "if" "(" expr ")" stmt ("else" stmt)?
             | "while" "(" expr ")" stmt
             | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-            | "return" expr ";"
+            | "return" expr? ";"
 expr        = assign | type ident("[" num "]")?
 assign      = conditional | conditional ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
 conditional = logical_or ("?" expr ":" conditional)?

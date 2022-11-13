@@ -14,6 +14,7 @@ typedef enum {
   TYPE_NULL,
   TYPE_INT,   // int
   TYPE_CHAR,  // char
+  TYPE_VOID,  // void
   TYPE_PTR,   // pointer to ...
   TYPE_ARRAY, // 配列型
 } TypeKind;
@@ -88,6 +89,7 @@ typedef enum {
   TK_FOR,               // for
   TK_INT,               // int
   TK_CHAR,              // char
+  TK_VOID,              // void
   TK_SIZEOF,            // sizeof
 } TokenKind;
 
