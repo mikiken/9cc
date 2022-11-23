@@ -62,7 +62,7 @@ void void_test2(int x) {
     printf("Argument x is less than 2.\n");
 }
 
-int function_test() {
+void function_test() {
   // 関数
   assert(5, foo(), "foo()");
   assert(8, foo() + 3, "foo() + 3");
@@ -80,5 +80,4 @@ int function_test() {
   void_test2(1); // => Argument x is less than 2.
 
   printf("All function test cases have passed.\n\n");
-  return 0;
 }

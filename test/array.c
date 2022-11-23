@@ -115,7 +115,7 @@ int fib2(int n) {
   return fib[n];
 }
 
-int array_test() {
+void array_test() {
   // 1次元配列
   assert(3, array_test1(), "{int a[2]; int *p; p = a; *p = 1; *(p+1) = 2; return *p + *(p+1);}");
   assert(8, array_test2(), "{int a; a = 2; int b[2]; int c; c = 3; int *p; p = b; *p = 1; *(p+1) = 2; return a + *p + *(p+1) + c;}");
@@ -132,5 +132,4 @@ int array_test() {
   assert(21, fib2(8), "fib(8)");
 
   printf("All array test cases have passed.\n\n");
-  return 0;
 }

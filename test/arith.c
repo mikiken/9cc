@@ -138,7 +138,7 @@ int not_operator_test1() {
     return 8;
 }
 
-int arith_test() {
+void arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
   assert(42, 42, "42"); // コメント
@@ -234,5 +234,4 @@ int arith_test() {
   assert(1, !0 ? 1 : 2, "{return !0 ? 1 : 2;}");
 
   printf("All arithmetical test cases have passed.\n\n");
-  return 0;
 }

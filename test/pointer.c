@@ -126,7 +126,7 @@ int pointer_test13() {
   return q - p;
 }
 
-int pointer_test() {
+void pointer_test() {
   // ポインタ型
   assert(5, pointer_test1(), "{int x; int *y; x=3; y=&x; return *y+2;}");
   assert(3, pointer_test2(), "{int x; x=3; return *&x; }");
@@ -145,5 +145,4 @@ int pointer_test() {
   assert(1, pointer_test13(), "{int a[2]; int *p; int *q; p = &a[0]; q = &a[1]; return q - p;}");
 
   printf("All pointer test cases have passed.\n\n");
-  return 0;
 }

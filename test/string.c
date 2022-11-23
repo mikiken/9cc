@@ -73,7 +73,7 @@ void string_literal_test2() {
   return;
 }
 
-int string_test() {
+void string_test() {
   // char型
   assert(3, char_type_test1(), "{char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; return x[0] + y;}");
   assert(1, char_type_test2(), "{ char x; x=1; return x; }");
@@ -110,5 +110,4 @@ int string_test() {
   string_literal_test2();
 
   printf("All string test cases have passed.\n\n");
-  return 0;
 }

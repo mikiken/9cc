@@ -191,7 +191,7 @@ int control_statement_test7() {
     return 3;
 }
 
-int control_statement_test() {
+void control_statement_test() {
   // if文
   assert(5, if_test1(), "{if(0) 3; return 5;}");
   assert(8, if_test2(), "{if (1) return 8;}");
@@ -222,5 +222,4 @@ int control_statement_test() {
   assert(3, control_statement_test7(), "{int a; a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;}");
 
   printf("All test cases for control statement have passed.\n\n");
-  return 0;
 }

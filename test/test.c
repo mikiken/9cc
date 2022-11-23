@@ -2,13 +2,13 @@ int printf();
 int puts();
 int exit();
 
-int arith_test();
-int variable_test();
-int control_statement_test();
-int function_test();
-int pointer_test();
-int array_test();
-int string_test();
+void arith_test();
+void variable_test();
+void control_statement_test();
+void function_test();
+void pointer_test();
+void array_test();
+void string_test();
 
 int assert(int expected, int actual, char *code) {
   if (expected == actual) {

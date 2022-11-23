@@ -87,7 +87,7 @@ int global_variable_test5() {
   return *global_variable4[0] + *global_variable4[1];
 }
 
-int variable_test() {
+void variable_test() {
   // ローカル変数
   assert(2, local_variable_test1(), "{int a; a=2; return a;}");
   assert(6, local_variable_test2(), "{int x; x=4; int y; y=2; return x+y;}");
@@ -107,5 +107,4 @@ int variable_test() {
   assert(80, sizeof(global_variable2), "sizeof(global_variable2)");
 
   printf("All variable test cases have passed.\n\n");
-  return 0;
 }
