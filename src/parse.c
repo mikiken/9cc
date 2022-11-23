@@ -71,6 +71,28 @@ int expect_number(Token *tok) {
   return val;
 }
 
+bool is_func_declaration(Token *tok) {
+  int count = 0;
+  while (true) {
+    if (consume_nostep(tok, TK_SEMICOLON) || consume_nostep(tok, TK_EOF))
+      error_at(tok->start, "引数の括弧が閉じていません");
+
+    // 現状、関数宣言の引数の型チェックは行っていない
+    // 関数ポインタが引数に来ても大丈夫なように、括弧の数が対応しているかのみチェックする
+    if (consume_nostep(tok, TK_LEFT_PARENTHESIS))
+      count++;
+    if (consume_nostep(tok, TK_RIGHT_PARENTHESIS)) {
+      if (consume_nostep(tok->next, TK_SEMICOLON) && !count)
+        return true;
+      if (consume_nostep(tok->next, TK_LEFT_BRACE) && !count)
+        return false;
+      else
+        count--;
+    }
+    tok = tok->next;
+  }
+}
+
 Obj *find_var(Obj *var_list, Token *var_name) {
   for (Obj *v = var_list; v != NULL; v = v->next)
     if (v->len == var_name->len && !memcmp(var_name->start, v->name, v->len))
@@ -349,8 +371,10 @@ Function *parse(Token *tok) {
 }
 
 Function *program(Token *tok) {
+  // 関数の連結リストを初期化
   Function *func_head = init_func_head();
   Function *cur_func = func_head;
+
   while (!is_eof(tok)) {
     Type *ident_type = parse_type(tok); // 関数/グローバル変数の型
     Token ident_name = *tok;            // 関数/グローバル変数名
@@ -359,9 +383,13 @@ Function *program(Token *tok) {
     // 関数の場合
     if (consume(tok, TK_LEFT_PARENTHESIS)) {
       // 関数宣言の場合、宣言を記録し読み飛ばす
-      if (consume_nostep(tok, TK_RIGHT_PARENTHESIS) && consume_nostep(tok->next, TK_SEMICOLON)) {
+      if (is_func_declaration(tok)) {
         new_func_declaration(ident_type, &ident_name);
-        skip_token(tok, 2);
+        while (true) {
+          if (consume(tok, TK_SEMICOLON))
+            break;
+          next_token(tok);
+        }
       }
       // 関数定義の場合
       else {
@@ -640,13 +668,13 @@ Node *postfix(Function *func, Token *tok) {
 }
 
 Node *primary(Function *func, Token *tok) {
-  // 次のトークンが"("なら、"(" expr ")"のはず
+  // "(" <expr> ")"
   if (consume(tok, TK_LEFT_PARENTHESIS)) {
     Node *node = expr(func, tok);
     expect(tok, TK_RIGHT_PARENTHESIS);
     return node;
   }
-
+  // identifier
   else if (consume_nostep(tok, TK_IDENT)) {
     Node *node;
     Token ident = *tok;

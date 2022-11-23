@@ -1,6 +1,8 @@
 int printf();
 
-int assert();
+int assert(int expected, int actual, char *code);
+
+void func_declaration_test1(void (*funcptr)(int a));
 
 int foo() {
   return 5;
