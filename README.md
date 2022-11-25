@@ -21,6 +21,7 @@ $ make test
 - `<` `<=` `>` `>=` `==` `!=` operators
 - `!` `&&` `||` operators
 - `?:` operator
+- `,` operator
 - unary `*` `&` operators
 - local variables
 - global variables
@@ -40,28 +41,67 @@ $ make test
 
 # BNF
 ```
-program     = (global_var | func_def)*
-grobal_var  = type ident("[" num "]")? ";"
-func_def    = type ident params "{" stmt* "}"
-type        = ("int" | "char" | "void") "*"*
-params      = "(" ((type ident ("," type ident)*) | "void")? ")"
-stmt        = expr ";"
-            | "{" stmt* "}"
-            | "if" "(" expr ")" stmt ("else" stmt)?
-            | "while" "(" expr ")" stmt
-            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-            | "return" expr? ";"
-expr        = assign | type ident("[" num "]")?
-assign      = conditional | conditional ("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assign
-conditional = logical_or ("?" expr ":" conditional)?
-logical_or  = logical_and ("||" logical_and)*
-logical_and = equality ("&&" equality)*
-equality    = relational ("==" relational | "!=" relational)*
-relational  = add ("<" add | "<=" add | ">" add | ">=" add)*
-add         = mul ("+" mul | "-" mul)*
-mul         = unary ("*" unary | "/" unary | "%" unary)*
-unary       = postfix | ("sizeof" | "+" | "-" | "*" | "&" | "++" | "--" | "!") unary
-postfix     = primary ("[" expr "]" | "++" | "--")?
-primary     = num | ident args? | string | "(" expr ")"
-args        = "(" (expr ("," expr)*)? ")"
+<program> := (<global_var_declaration> | <func_definition> | <func_declaration>)*
+
+<global_var_declaration> := <declaration> <type_suffix>? ";"
+
+<func_definition> := <declaration> <parameter_list> <block_stmt>
+
+<func_declaration> = <declaration> <parameter_list> ";" # 引数リストのパースは行わず、単純に")"までは読み飛ばす
+
+<declaration> := <declaration_specifier> <identifier>
+
+<declaration_specifier> := <type_specifier> "*"* | "void" "*"?
+
+<type_specifier> := "int" | "char"
+
+<type_suffix> := "[" <integer_constant> "]"
+
+<parameter_list> := "(" (<parameter> | "void")? ")"
+
+<parameter> := <declaration> ("," <declaration>)*
+
+<block_stmt> := "{" (<stmt> | <declaration> ";")* "}"
+
+<stmt> := <expr> ";"
+        | <block_stmt>
+        | "if" "(" <expr> ")" <stmt> ("else" <stmt>)?
+        | "while" "(" <expr> ")" <stmt>
+        | "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt>
+        | "return" <expr>? ";"
+
+<expr> := <assign> ("," <expr>)?
+       
+<assign>      := <conditional> (("=" | "+=" | "-=" | "*=" | "/=" | "%=" ) <assign>)?
+
+<conditional> := <logical_or> ("?" <expr> ":" <conditional>)?
+
+<logical_or>  := <logical_and> ("||" <logical_and>)*
+
+<logical_and> := <equality> ("&&" <equality>)*
+
+<equality>    := <relational> (("==" | "!=") <relational>)*
+
+<relational>  := <add> (("<" | "<=" | ">" | ">=") <add>)*
+
+<add>         := <mul> (("+"|"-") <mul>)*
+
+<mul>         := <unary> (("*" | "/" | "%") <unary>)*
+
+<unary>       := <postfix>
+               | ("++" | "--") <unary>
+               | ("&" | "*" | "+" | "-" | "!" |) <unary>
+               | "sizeof" <unary>
+
+# TODO: "sizeof" "(" <type_name> ")" に対応する 
+
+<postfix>     := <primary> ("[" <expr> "]" | "++" | "--")? # NOTE: 多次元配列は現在未対応
+
+<primary>   := <identifier>
+             | <identifier> "(" <arg_list>? ")"
+             | <integer_constant>
+             | <string_literal>
+             | "(" <expr> ")"
+
+<arg_list> := <assign> ("," <assign>)*
 ```

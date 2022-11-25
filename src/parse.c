@@ -71,6 +71,16 @@ int expect_number(Token *tok) {
   return val;
 }
 
+// 指定した種類のトークンまで読み進める
+// 入れ子構造は考慮されない
+void skip_token_to(Token *tok, TokenKind kind) {
+  while (true) {
+    if (consume(tok, kind))
+      break;
+    next_token(tok);
+  }
+}
+
 bool is_func_declaration(Token *tok) {
   int count = 0;
   while (true) {
@@ -350,6 +360,7 @@ bool is_eof(Token *tok) {
 }
 
 Function *program();
+Node *block_stmt();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -385,25 +396,14 @@ Function *program(Token *tok) {
       // 関数宣言の場合、宣言を記録し読み飛ばす
       if (is_func_declaration(tok)) {
         new_func_declaration(ident_type, &ident_name);
-        while (true) {
-          if (consume(tok, TK_SEMICOLON))
-            break;
-          next_token(tok);
-        }
+        skip_token_to(tok, TK_SEMICOLON);
       }
       // 関数定義の場合
       else {
         cur_func = cur_func->next = new_func_definition(ident_type, &ident_name);
         parse_parameter(cur_func, tok); // 引数
         expect(tok, TK_LEFT_BRACE);
-        cur_func->body = new_node(ND_STMT); // statement
-        Node head;
-        Node *cur_stmt = &head;
-        while (!consume(tok, TK_RIGHT_BRACE)) {
-          cur_stmt = cur_stmt->next = new_node(ND_STMT);
-          cur_stmt->body = stmt(cur_func, tok);
-        }
-        cur_func->body = head.next;
+        cur_func->body = block_stmt(cur_func, tok);
       }
     }
     // グローバル変数の場合
@@ -417,6 +417,32 @@ Function *program(Token *tok) {
   // 関数のリストの末端
   cur_func->next = NULL;
   return func_head->next;
+}
+
+Node *block_stmt(Function *func, Token *tok) {
+  Node head;
+  Node *cur = &head;
+  while (!consume(tok, TK_RIGHT_BRACE)) {
+    cur = cur->next = new_node(ND_STMT);
+    Type *lvar_dec_type = parse_type(tok);
+    // local variable declaration
+    if (lvar_dec_type) {
+      if (lvar_dec_type->kind == TYPE_VOID)
+        error_at(tok->start, "void型の変数を定義することはできません");
+      cur->body = new_lvar_definition(func, lvar_dec_type, tok);
+      // 配列の場合
+      if (lvar_dec_type->kind == TYPE_ARRAY)
+        skip_token(tok, 4);
+      // 通常の変数の場合
+      else
+        next_token(tok);
+      expect(tok, TK_SEMICOLON);
+    }
+    else {
+      cur->body = stmt(func, tok);
+    }
+  }
+  return head.next;
 }
 
 Node *stmt(Function *func, Token *tok) {
@@ -466,16 +492,8 @@ Node *stmt(Function *func, Token *tok) {
     node->then = stmt(func, tok);
   }
 
-  else if (consume(tok, TK_LEFT_BRACE)) {
-    node = new_node(ND_STMT);
-    Node head;
-    Node *cur = &head;
-    while (!consume(tok, TK_RIGHT_BRACE)) {
-      cur = cur->next = new_node(ND_STMT);
-      cur->body = stmt(func, tok);
-    }
-    node = head.next;
-  }
+  else if (consume(tok, TK_LEFT_BRACE))
+    node = block_stmt(func, tok);
 
   else {
     node = expr(func, tok);
@@ -486,19 +504,6 @@ Node *stmt(Function *func, Token *tok) {
 }
 
 Node *expr(Function *func, Token *tok) {
-  Type *ty = parse_type(tok);
-  if (ty != NULL) {
-    if (ty->kind == TYPE_VOID)
-      error_at(tok->start, "void型の変数を定義することはできません");
-    Node *node = new_lvar_definition(func, ty, tok);
-    // 配列の場合
-    if (ty->kind == TYPE_ARRAY)
-      skip_token(tok, 4);
-    // 通常の変数の場合
-    else
-      next_token(tok);
-    return node;
-  }
   return assign(func, tok);
 }
 
@@ -531,9 +536,8 @@ Node *conditional(Function *func, Token *tok) {
     node->els = conditional(func, tok);
     return node;
   }
-  else {
+  else
     return cond;
-  }
 }
 
 Node *logical_or(Function *func, Token *tok) {
