@@ -108,6 +108,7 @@ struct Token {
 typedef enum {
   ND_STMT,
   ND_EXPR,
+  ND_COMMA,   // ,
   ND_ADD,     // +
   ND_SUB,     // -
   ND_MUL,     // *

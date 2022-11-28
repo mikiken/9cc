@@ -18,7 +18,7 @@ test: 9cc
 
 # cleanに対するルールを設定
 clean:
-				rm -f 9cc .gdb_history src/*.o test/*.s
+				rm -f 9cc .gdb_history tmp* src/*.o test/*.s
 				find ./ -name "peda-session-*.txt" -exec rm {} \;
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定

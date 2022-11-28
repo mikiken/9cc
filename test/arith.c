@@ -138,6 +138,10 @@ int not_operator_test1() {
     return 8;
 }
 
+int comma_opetator_test1(int x, int y) {
+  return x, y;
+}
+
 void arith_test() {
   // 整数1つを返す
   assert(0, 0, "0");
@@ -232,6 +236,10 @@ void arith_test() {
   // '?:' 演算子 (conditional operator)
   assert(2, !1 ? 1 : 2, "{return !1 ? 1 : 2;}");
   assert(1, !0 ? 1 : 2, "{return !0 ? 1 : 2;}");
+
+  // ',' 演算子
+  assert(3, (1, 2, 3), "{return (1, 2, 3);}");
+  assert(8, comma_opetator_test1((1, 2, (3, 4)), ((5, 6, 7), 8)), "comma_opetator_test1((1, 2), (3, 4))");
 
   printf("All arithmetical test cases have passed.\n\n");
 }

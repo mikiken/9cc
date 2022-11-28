@@ -504,7 +504,10 @@ Node *stmt(Function *func, Token *tok) {
 }
 
 Node *expr(Function *func, Token *tok) {
-  return assign(func, tok);
+  Node *node = assign(func, tok);
+  if (consume(tok, TK_COMMA))
+    node = new_binary_node(ND_COMMA, node, expr(func, tok));
+  return node;
 }
 
 Node *assign(Function *func, Token *tok) {
@@ -695,7 +698,7 @@ Node *primary(Function *func, Token *tok) {
         Node *cur = &head;
         do {
           cur = cur->next = new_node(ND_EXPR);
-          cur->body = expr(func, tok);
+          cur->body = assign(func, tok);
         } while (consume(tok, TK_COMMA));
         expect(tok, TK_RIGHT_PARENTHESIS);
         node->expr = head.next;

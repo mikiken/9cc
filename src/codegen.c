@@ -330,6 +330,11 @@ void gen_expr(Node *node) {
       printf(".L.end.%d:\n", label);
       return;
     }
+    case ND_COMMA:
+      gen_expr(node->lhs);
+      pop(node->lhs->type, RAX); // スタックにpushされた左辺値は不要なので捨てる (こうしないと引数に直接カンマ演算子を書いたときにバグる)
+      gen_expr(node->rhs);
+      return;
     case ND_FUNCALL: {
       int arg_count = 0;
       Type arg_type[6]; // 現状引数6つまでの関数呼び出しにのみ対応しているため要素数は6でよい
