@@ -246,6 +246,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       // 引数
       for (Node *n = node->expr; n; n = n->next) {
         n->body = add_type_to_node(lvar_list, n->body);
+        if (n->body->kind == ND_LVAR && n->body->type->kind == TYPE_ARRAY)
+          n->body = cast_array_to_pointer(n->body);
       }
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
       if (declaration == NULL) {
