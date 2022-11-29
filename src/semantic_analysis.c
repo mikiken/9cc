@@ -109,6 +109,12 @@ bool is_arithmeric_type(TypeKind kind) {
   return false;
 }
 
+TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
+  if (!is_arithmeric_type(ty_1->kind) || !is_arithmeric_type(ty_2->kind))
+    error("算術型ではありません");
+  return base_type_size(ty_1) >= base_type_size(ty_2) ? ty_1->kind : ty_2->kind;
+}
+
 void fix_rhs_type(Node *lhs, Node *rhs) {
   // NOTE: この関数の処理が詰めきれてない気がする
   // 左辺がchar型で右辺がint型の場合は,右辺をchar型に修正する
@@ -353,10 +359,13 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_COND: {
-      Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
-      typed_node->cond = add_type_to_node(lvar_list, node->cond);
-      typed_node->then = add_type_to_node(lvar_list, node->then);
-      typed_node->els = add_type_to_node(lvar_list, node->els);
+      Node *cond = add_type_to_node(lvar_list, node->cond);
+      Node *then = add_type_to_node(lvar_list, node->then);
+      Node *els = add_type_to_node(lvar_list, node->els);
+      Node *typed_node = new_typed_node(new_type(larger_arithmetic_type(then->type, els->type)), node);
+      typed_node->cond = cond;
+      typed_node->then = then;
+      typed_node->els = els;
       return typed_node;
     }
     case ND_COMMA: {
