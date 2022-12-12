@@ -155,6 +155,22 @@ int calc_gvar_size(Type *type) {
   }
 }
 
+void sign_extension(int size) {
+  switch (size) {
+    case 2:
+      printf("  cwd\n");
+      return;
+    case 4:
+      printf("  cdq\n");
+      return;
+    case 8:
+      printf("  cqo\n");
+      return;
+    default:
+      error("sign_extension: 非対応のデータサイズです");
+  }
+}
+
 void gen_data_secton(Obj *gvar_list) {
   printf(".data\n");
   for (Obj *obj = gvar_list; obj->next != NULL; obj = obj->next) {
@@ -371,11 +387,11 @@ void gen_expr(Node *node) {
       printf("  imul %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       break;
     case ND_DIV:
-      printf("  cqo\n"); // rdx:raxとして128bit整数に拡張
+      sign_extension(reg_size(node->type));
       printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       break;
     case ND_MOD:
-      printf("  cqo\n");
+      sign_extension(reg_size(node->type));
       printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       printf("  mov rax, rdx\n");
       break;
