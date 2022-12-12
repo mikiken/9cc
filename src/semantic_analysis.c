@@ -109,6 +109,13 @@ bool is_arithmeric_type(TypeKind kind) {
   return false;
 }
 
+bool is_array_type_node(Node *node) {
+  if ((node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY)
+    return true;
+  else
+    return false;
+}
+
 TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
   if (!is_arithmeric_type(ty_1->kind) || !is_arithmeric_type(ty_2->kind))
     error("算術型ではありません");
@@ -154,7 +161,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       // 右辺が変数型の場合は先頭要素へのポインタにキャストする
-      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
+      if (is_array_type_node(rhs))
         rhs = cast_array_to_pointer(rhs);
       fix_rhs_type(lhs, rhs);
       // 両辺で型が異なる場合はエラーにする
@@ -165,7 +172,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     }
     case ND_DEREF: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY) {
+      if (is_array_type_node(lhs)) {
         lhs = cast_array_to_pointer(lhs);
       }
       if (lhs->type->kind != TYPE_PTR) {
@@ -246,7 +253,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       // 引数
       for (Node *n = node->expr; n; n = n->next) {
         n->body = add_type_to_node(lvar_list, n->body);
-        if (n->body->kind == ND_LVAR && n->body->type->kind == TYPE_ARRAY)
+        // 引数に直接配列が書かれた場合はポインタにキャストする
+        if (is_array_type_node(n->body))
           n->body = cast_array_to_pointer(n->body);
       }
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
@@ -260,10 +268,10 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
-      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY)
+      if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
       // 右辺が配列の場合、ポインタにキャストする
-      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
+      if (is_array_type_node(rhs))
         rhs = cast_array_to_pointer(rhs);
       // ポインタ同士の加算は禁止されているのでエラーにする
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR)
@@ -293,10 +301,10 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
-      if ((lhs->kind == ND_LVAR || lhs->kind == ND_GVAR) && lhs->type->kind == TYPE_ARRAY)
+      if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
       // 右辺が配列の場合、ポインタにキャストする
-      if ((rhs->kind == ND_LVAR || rhs->kind == ND_GVAR) && rhs->type->kind == TYPE_ARRAY)
+      if (is_array_type_node(rhs))
         rhs = cast_array_to_pointer(rhs);
       // 左辺がint型、右辺がポインタ型の減算は禁止されているのでエラーにする
       if (lhs->type->kind == TYPE_INT && rhs->type->kind == TYPE_PTR)
@@ -346,24 +354,47 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     case ND_LE: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(lhs))
+        lhs = cast_array_to_pointer(lhs);
+      // 右辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(rhs))
+        rhs = cast_array_to_pointer(rhs);
+      // 両辺の型が異なる場合はエラーにする
       if (lhs->type->kind != rhs->type->kind)
         error("異なる型に対して比較を行うことはできません");
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_NOT: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(lhs))
+        lhs = cast_array_to_pointer(lhs);
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, NULL);
     }
     case ND_AND:
     case ND_OR: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(lhs))
+        lhs = cast_array_to_pointer(lhs);
+      // 右辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(rhs))
+        rhs = cast_array_to_pointer(rhs);
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_COND: {
       Node *cond = add_type_to_node(lvar_list, node->cond);
       Node *then = add_type_to_node(lvar_list, node->then);
       Node *els = add_type_to_node(lvar_list, node->els);
+      // 各nodeに直接配列が書かれた場合はポインタにキャストする
+      if (is_array_type_node(cond))
+        cond = cast_array_to_pointer(cond);
+      if (is_array_type_node(then))
+        then = cast_array_to_pointer(then);
+      if (is_array_type_node(els))
+        els = cast_array_to_pointer(els);
       Node *typed_node = new_typed_node(new_type(larger_arithmetic_type(then->type, els->type)), node);
       typed_node->cond = cond;
       typed_node->then = then;
@@ -373,6 +404,12 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     case ND_COMMA: {
       Node *lhs = add_type_to_node(lvar_list, node->lhs);
       Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(lhs))
+        lhs = cast_array_to_pointer(lhs);
+      // 右辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(rhs))
+        rhs = cast_array_to_pointer(rhs);
       return new_typed_binary(new_typed_node(rhs->type, node), lhs, rhs);
     }
     default:
