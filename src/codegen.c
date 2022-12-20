@@ -247,8 +247,12 @@ void gen_addr(Node *node) {
 void gen_stmt(Function *func, Node *node) {
   switch (node->kind) {
     case ND_STMT:
-      for (Node *n = node; n; n = n->next)
+      for (Node *n = node; n; n = n->next) {
         gen_stmt(func, n->body);
+        // stmtのレベルに関数呼び出しが直接来た場合は返り値を使わないのでpopして捨てる
+        if (n->body->kind == ND_FUNCALL)
+          pop(n->body->type, RAX);
+      }
       return;
     case ND_RETURN:
       if (node->lhs) {
