@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 int label_count;
+int stack_align;
 
 #define RAX 0
 #define RDI 1
@@ -87,18 +88,27 @@ int arg_reg_kind(int arg_count) {
 
 void push(Type *type, int src_reg) {
   printf("  push %s\n", reg_name(src_reg, 8));
+  stack_align -= 8;
 }
 
 void pop(Type *type, int dest_reg) {
   printf("  pop %s\n", reg_name(dest_reg, 8));
+  stack_align += 8;
+}
+
+void push_addr(int dest_reg) {
+  printf("  push %s\n", reg_name(dest_reg, 8)); // アドレスだから8byte
+  stack_align -= 8;
 }
 
 void pop_addr(int dest_reg) {
   printf("  pop %s\n", reg_name(dest_reg, 8)); // アドレスだから8byte
+  stack_align += 8;
 }
 
 void push_immediate_value(int val) {
   printf("  push %d\n", val);
+  stack_align -= 8;
 }
 
 void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
@@ -189,7 +199,7 @@ void gen_data_secton(Obj *gvar_list) {
 }
 
 void gen_prologue(Function *func) {
-  printf("  push rbp\n");     // 呼び出し前の関数のベースポインタをスタックにpushしておく
+  push_addr(RBP);             // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
   int offset = func->lvar_list->offset;
@@ -202,7 +212,7 @@ void gen_prologue(Function *func) {
 void gen_epilogue(Function *func) {
   printf(".L.return.%s:\n", func->name);
   printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
+  pop_addr(RBP);
   printf("  ret\n");
 }
 
@@ -214,15 +224,15 @@ void gen_addr(Node *node) {
   switch (node->kind) {
     case ND_LVAR:
       printf("  lea rdi, [rbp-%d]\n", node->offset); // アドレスは8byte
-      printf("  push rdi\n");                        // ローカル変数のアドレスをスタックにpush
+      push_addr(RDI);                                // ローカル変数のアドレスをスタックにpush
       return;
     case ND_GVAR:
       printf("  lea rdi, [rip+%s]\n", node->gvar_name); // アドレスは8byte
-      printf("  push rdi\n");                           //グローバル変数のアドレスをスタックにpush
+      push_addr(RDI);                                   //グローバル変数のアドレスをスタックにpush
       return;
     case ND_STR:
       printf("  lea rdi, [rip+.LC%d]\n", node->str_id);
-      printf("  push rdi\n");
+      push_addr(RDI);
       return;
     // derefが連続しているときは、更にlhsのアドレスを参照する
     case ND_DEREF:
