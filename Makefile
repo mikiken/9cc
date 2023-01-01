@@ -16,10 +16,15 @@ $(OBJS): src/9cc.h
 test: 9cc
 				./test/test_driver.sh
 
+donut: 9cc
+				./9cc ./sample/donut.c > tmp.s
+				cc -g -O0 -o tmp tmp.s
+				./tmp
+
 # cleanに対するルールを設定
 clean:
 				rm -f 9cc .gdb_history tmp* src/*.o test/*.s
 				find ./ -name "peda-session-*.txt" -exec rm {} \;
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定
-.PHONY: test clean
+.PHONY: test clean donut
