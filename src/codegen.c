@@ -1,7 +1,6 @@
 #include "9cc.h"
 
 int label_count;
-int stack_align;
 
 #define RAX 0
 #define RDI 1
@@ -88,27 +87,22 @@ int arg_reg_kind(int arg_count) {
 
 void push(Type *type, int src_reg) {
   printf("  push %s\n", reg_name(src_reg, 8));
-  stack_align -= 8;
 }
 
 void pop(Type *type, int dest_reg) {
   printf("  pop %s\n", reg_name(dest_reg, 8));
-  stack_align += 8;
 }
 
 void push_addr(int dest_reg) {
   printf("  push %s\n", reg_name(dest_reg, 8)); // アドレスだから8byte
-  stack_align -= 8;
 }
 
 void pop_addr(int dest_reg) {
   printf("  pop %s\n", reg_name(dest_reg, 8)); // アドレスだから8byte
-  stack_align += 8;
 }
 
 void push_immediate_value(int val) {
   printf("  push %d\n", val);
-  stack_align -= 8;
 }
 
 void mov_memory_to_register(Type *type, int dest_reg, int src_reg) {
@@ -249,9 +243,6 @@ void gen_stmt(Function *func, Node *node) {
     case ND_STMT:
       for (Node *n = node; n; n = n->next) {
         gen_stmt(func, n->body);
-        // stmtのレベルに関数呼び出しが直接来た場合は返り値を使わないのでpopして捨てる
-        if (n->body->kind == ND_FUNCALL)
-          pop(n->body->type, RAX);
       }
       return;
     case ND_RETURN:
@@ -272,7 +263,6 @@ void gen_stmt(Function *func, Node *node) {
         printf("  jmp .L.end.%d\n", label);
         printf(".L.else.%d:\n", label);
         gen_stmt(func, node->els);
-
         printf(".L.end.%d:\n", label);
       }
       else {
@@ -287,8 +277,10 @@ void gen_stmt(Function *func, Node *node) {
     }
     case ND_FOR: {
       int label = label_count++;
-      if (node->init)
+      if (node->init) {
         gen_expr(node->init);
+        pop(node->init->type, RAX);
+      }
       printf(".L.begin.%d:\n", label);
       if (node->cond) {
         gen_expr(node->cond);
@@ -297,15 +289,21 @@ void gen_stmt(Function *func, Node *node) {
         printf("  je  .L.end.%d\n", label);
       }
       gen_stmt(func, node->then);
-      if (node->inc)
+      if (node->inc) {
         gen_expr(node->inc);
+        pop(node->inc->type, RAX);
+      }
       printf("  jmp .L.begin.%d\n", label);
       printf(".L.end.%d:\n", label);
       return;
     }
+    // それ以外の場合はexprのはず
+    default:
+      gen_expr(node);
+      if (node->kind != ND_LVARDEF && node->kind != ND_ADDR && node->kind != ND_COND && node->kind != ND_COMMA)
+        pop(node->type, RAX);
+      return;
   }
-  // 上記のいずれでもない場合、単なるND_EXPRのはず
-  gen_expr(node);
 }
 
 void gen_expr(Node *node) {
