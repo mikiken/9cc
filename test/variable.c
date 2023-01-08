@@ -51,6 +51,23 @@ int local_variable_test7() {
   return (-Foo_123_bar + 5) * 2;
 }
 
+int local_variable_test8() {
+  int x = 8;
+  return x;
+}
+
+int local_variable_test9() {
+  int x = 5;
+  char y = x = x + local_variable_test8();
+  return x + y;
+}
+
+int local_variable_test10() {
+  int x = 3;
+  int *y = &x;
+  return *y;
+}
+
 int global_variable1;
 int global_variable2[20];
 int *global_variable3;
@@ -96,6 +113,9 @@ void variable_test() {
   assert(8, local_variable_test5(), "{int bar; bar=2; return bar*3+2;}");
   assert(6, local_variable_test6(), "{int _foo123; int bar; _foo123=4; bar=2; return _foo123+bar;}");
   assert(4, local_variable_test7(), "{int Foo_123_bar; Foo_123_bar=3; return (-Foo_123_bar+5)*2;}");
+  assert(8, local_variable_test8(), "{int x = 8; return x;}");
+  assert(26, local_variable_test9(), "{int x = 5; char y = x = x + local_variable_test8(); return x + y;}");
+  assert(3, local_variable_test10(), "{int x = 3; int *y = &x; return *x;}");
 
   // グローバル変数
   assert(0, global_variable_test1(), "global_variable_test1()");

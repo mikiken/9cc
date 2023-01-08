@@ -425,17 +425,25 @@ Node *block_stmt(Function *func, Token *tok) {
   while (!consume(tok, TK_RIGHT_BRACE)) {
     cur = cur->next = new_node(ND_STMT);
     Type *lvar_dec_type = parse_type(tok);
+    Token ident = *tok;
     // local variable declaration
     if (lvar_dec_type) {
       if (lvar_dec_type->kind == TYPE_VOID)
         error_at(tok->start, "void型の変数を定義することはできません");
-      cur->body = new_lvar_definition(func, lvar_dec_type, tok);
+      cur->body = new_lvar_definition(func, lvar_dec_type, &ident);
       // 配列の場合
       if (lvar_dec_type->kind == TYPE_ARRAY)
         skip_token(tok, 4);
       // 通常の変数の場合
       else
         next_token(tok);
+      // 初期化式
+      if (consume(tok, TK_ASSIGN)) {
+        cur = cur->next = new_node(ND_STMT);
+        cur->body = new_node(ND_ASSIGN);
+        cur->body->lhs = var_node(func, &ident);
+        cur->body->rhs = assign(func, tok);
+      }
       expect(tok, TK_SEMICOLON);
     }
     else {
