@@ -221,5 +221,7 @@ void control_statement_test() {
   assert(10, control_statement_test6(), "{int a; int b; a=3; {b=7; if(a==3) return a+b;}}");
   assert(3, control_statement_test7(), "{int a; a=3; if(a==1) return 1; if(a==2) return 2; if(a==3) return 3;}");
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All test cases for control statement have passed.\n\n");
+  printf("\x1b[0m");
 }

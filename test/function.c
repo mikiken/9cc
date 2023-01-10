@@ -79,5 +79,7 @@ void function_test() {
   void_test2(3); // => Argument x is equal to or greater than 2.
   void_test2(1); // => Argument x is less than 2.
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All function test cases have passed.\n\n");
+  printf("\x1b[0m");
 }

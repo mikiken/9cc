@@ -131,5 +131,7 @@ void array_test() {
   assert(4, array_test12(), "{int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}");
   assert(21, fib2(8), "fib(8)");
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All array test cases have passed.\n\n");
+  printf("\x1b[0m");
 }

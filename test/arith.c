@@ -250,5 +250,7 @@ void arith_test() {
   assert(3, (1, 2, 3), "{return (1, 2, 3);}");
   assert(8, comma_opetator_test1((1, 2, (3, 4)), ((5, 6, 7), 8)), "comma_opetator_test1((1, 2), (3, 4))");
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All arithmetical test cases have passed.\n\n");
+  printf("\x1b[0m");
 }

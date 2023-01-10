@@ -144,5 +144,7 @@ void pointer_test() {
   assert(1, pointer_test12(), "{int a[2]; int k; k = &a[1] - &a[0]; return k;}");
   assert(1, pointer_test13(), "{int a[2]; int *p; int *q; p = &a[0]; q = &a[1]; return q - p;}");
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All pointer test cases have passed.\n\n");
+  printf("\x1b[0m");
 }

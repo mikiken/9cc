@@ -126,5 +126,7 @@ void variable_test() {
   assert(4, sizeof(global_variable1), "sizeof(global_variable1)");
   assert(80, sizeof(global_variable2), "sizeof(global_variable2)");
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All variable test cases have passed.\n\n");
+  printf("\x1b[0m");
 }

@@ -12,9 +12,15 @@ void string_test();
 
 int assert(int expected, int actual, char *code) {
   if (expected == actual) {
+    printf("\x1b[32m"); // 文字色を緑に設定
+    printf("[PASS] ");
+    printf("\x1b[0m");
     printf("%s => %d\n", code, actual);
   }
   else {
+    printf("\x1b[31m"); // 文字色を赤に設定
+    printf("[FAIL] ");
+    printf("\x1b[0m");
     printf("%s => %d expected, but got %d\n", code, expected, actual);
     exit(1);
   }
@@ -42,6 +48,8 @@ int main() {
   // char型/文字列リテラル/エスケープシーケンスのテスト
   string_test();
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All test cases have passed.\n");
+  printf("\x1b[0m");
   return 0;
 }

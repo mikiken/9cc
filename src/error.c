@@ -5,8 +5,10 @@
 void error(char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
+  fprintf(stderr, "\x1b[31m"); // 文字色を赤に設定
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
+  fprintf(stderr, "\x1b[0m");
   exit(1);
 }
 
@@ -30,16 +32,21 @@ void error_at(char *loc, char *fmt, ...) {
       line_num++;
 
   // 見つかった行をファイル名と行番号と一緒に表示
-  fprintf(stderr, "error in %s: line %d\n", file_name, line_num);
+  fprintf(stderr, "\x1b[31m"); // 文字色を赤に設定
+  fprintf(stderr, "[Error] ");
+  fprintf(stderr, "\x1b[0m");
+  fprintf(stderr, "in %s : %d\n", file_name, line_num);
   int indent = fprintf(stderr, "    %d |", line_num);
   fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
   // エラー箇所を"^"を指し示して、エラーメッセージを表示
   int pos = loc - line + indent;
   fprintf(stderr, "%*s", pos, " "); // pos個の空白を出力
+  fprintf(stderr, "\x1b[31m");      // 文字色を赤に設定
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
+  fprintf(stderr, "\x1b[0m");
   exit(1);
 }
 

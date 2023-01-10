@@ -109,5 +109,7 @@ void string_test() {
   assert(34, "\""[0], "{return \"\\\"\"[0];}");
   string_literal_test2();
 
+  printf("\x1b[32m"); // 文字色を緑に設定
   printf("All string test cases have passed.\n\n");
+  printf("\x1b[0m");
 }
