@@ -70,6 +70,15 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
     case TK_GREATER:
       error_at(loc, "'>'ではありません");
       return;
+    case TK_LOGICAL_NOT:
+      error_at(loc, "'!'ではありません");
+      return;
+    case TK_LOGICAL_AND:
+      error_at(loc, "'&&'ではありません");
+      return;
+    case TK_LOGICAL_OR:
+      error_at(loc, "'||'ではありません");
+      return;
     case TK_PLUS:
       error_at(loc, "'+'ではありません");
       return;
@@ -82,8 +91,32 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
     case TK_SLASH:
       error_at(loc, "'/'ではありません");
       return;
+    case TK_PERCENT:
+      error_at(loc, "'%%'ではありません");
+      return;
     case TK_ASSIGN:
       error_at(loc, "'='ではありません");
+      return;
+    case TK_ADD_ASSIGN:
+      error_at(loc, "'+='ではありません");
+      return;
+    case TK_SUB_ASSIGN:
+      error_at(loc, "'-='ではありません");
+      return;
+    case TK_MUL_ASSIGN:
+      error_at(loc, "'*='ではありません");
+      return;
+    case TK_DIV_ASSIGN:
+      error_at(loc, "'/='ではありません");
+      return;
+    case TK_MOD_ASSIGN:
+      error_at(loc, "'%%='ではありません");
+      return;
+    case TK_INCREMENT:
+      error_at(loc, "'++'ではありません");
+      return;
+    case TK_DECREMENT:
+      error_at(loc, "'--'ではありません");
       return;
     case TK_SEMICOLON:
       error_at(loc, "';'ではありません");
@@ -93,6 +126,12 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
       return;
     case TK_AND:
       error_at(loc, "'&'ではありません");
+      return;
+    case TK_QUESTION:
+      error_at(loc, "'?'ではありません");
+      return;
+    case TK_COLON:
+      error_at(loc, "':'ではありません");
       return;
     case TK_LEFT_PARENTHESIS:
       error_at(loc, "'('ではありません");
@@ -118,6 +157,9 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
     case TK_NUM:
       error_at(loc, "整数ではありません");
       return;
+    case TK_STR:
+      error_at(loc, "文字列リテラルではありません");
+      return;
     case TK_EOF:
       error_at(loc, "入力の終端ではありません");
       return;
@@ -138,6 +180,12 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
       return;
     case TK_INT:
       error_at(loc, "'int'ではありません");
+      return;
+    case TK_CHAR:
+      error_at(loc, "'char'ではありません");
+      return;
+    case TK_VOID:
+      error_at(loc, "'void'ではありません");
       return;
     case TK_SIZEOF:
       error_at(loc, "'sizeof'ではありません");
