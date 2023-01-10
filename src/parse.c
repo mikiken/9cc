@@ -361,6 +361,7 @@ bool is_eof(Token *tok) {
 
 Function *program();
 Node *block_stmt();
+Node *declaration();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -428,29 +429,37 @@ Node *block_stmt(Function *func, Token *tok) {
     Token ident = *tok;
     // local variable declaration
     if (lvar_dec_type) {
-      if (lvar_dec_type->kind == TYPE_VOID)
-        error_at(tok->start, "void型の変数を定義することはできません");
-      cur->body = new_lvar_definition(func, lvar_dec_type, &ident);
-      // 配列の場合
-      if (lvar_dec_type->kind == TYPE_ARRAY)
-        skip_token(tok, 4);
-      // 通常の変数の場合
-      else
-        next_token(tok);
-      // 初期化式
-      if (consume(tok, TK_ASSIGN)) {
-        cur = cur->next = new_node(ND_STMT);
-        cur->body = new_node(ND_ASSIGN);
-        cur->body->lhs = var_node(func, &ident);
-        cur->body->rhs = assign(func, tok);
-      }
+      cur->body = declaration(func, lvar_dec_type, tok);
       expect(tok, TK_SEMICOLON);
     }
-    else {
+    else
       cur->body = stmt(func, tok);
-    }
   }
   return head.next;
+}
+
+// int i = 0, j = 0 のような記法は現状未対応
+Node *declaration(Function *func, Type *dec_type, Token *tok) {
+  if (dec_type->kind == TYPE_VOID)
+    error_at(tok->start, "void型の変数を定義することはできません");
+
+  Token ident = *tok;
+  Node *node = new_lvar_definition(func, dec_type, &ident);
+  // 配列の場合
+  if (dec_type->kind == TYPE_ARRAY)
+    skip_token(tok, 4);
+  // 通常の変数の場合
+  else
+    next_token(tok);
+
+  // 初期化式がある場合
+  if (consume(tok, TK_ASSIGN)) {
+    node = new_node(ND_ASSIGN);
+    node->lhs = var_node(func, &ident);
+    node->rhs = assign(func, tok);
+  }
+
+  return node;
 }
 
 Node *stmt(Function *func, Token *tok) {
@@ -488,8 +497,14 @@ Node *stmt(Function *func, Token *tok) {
   else if (consume(tok, TK_FOR)) {
     node = new_node(ND_FOR);
     expect(tok, TK_LEFT_PARENTHESIS);
-    if (!consume_nostep(tok, TK_SEMICOLON))
-      node->init = expr(func, tok);
+    if (!consume_nostep(tok, TK_SEMICOLON)) {
+      Type *lvar_dec_type = parse_type(tok);
+      // カウンタ変数の宣言がある場合
+      if (lvar_dec_type)
+        node->init = declaration(func, lvar_dec_type, tok);
+      else
+        node->init = expr(func, tok);
+    }
     expect(tok, TK_SEMICOLON);
     if (!consume_nostep(tok, TK_SEMICOLON))
       node->cond = expr(func, tok);
