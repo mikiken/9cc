@@ -438,6 +438,21 @@ Node *block_stmt(Function *func, Token *tok) {
   return head.next;
 }
 
+Node *array_init(Function *func, Token *ident, Token *tok) {
+  Node head;
+  Node *cur = &head;
+  for (int offset = 0; !consume(tok, TK_RIGHT_BRACE); offset++) {
+    cur = cur->next = new_node(ND_STMT);
+    cur->body = new_node(ND_ASSIGN);
+    cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, var_node(func, ident), new_num_node(offset)), NULL);
+    cur->body->rhs = assign(func, tok);
+    if (consume(tok, TK_RIGHT_BRACE))
+      return head.next;
+    expect(tok, TK_COMMA);
+  }
+  return head.next;
+}
+
 // int i = 0, j = 0 のような記法は現状未対応
 Node *declaration(Function *func, Type *dec_type, Token *tok) {
   if (dec_type->kind == TYPE_VOID)
@@ -454,9 +469,14 @@ Node *declaration(Function *func, Type *dec_type, Token *tok) {
 
   // 初期化式がある場合
   if (consume(tok, TK_ASSIGN)) {
-    node = new_node(ND_ASSIGN);
-    node->lhs = var_node(func, &ident);
-    node->rhs = assign(func, tok);
+    // 配列の初期化式の場合
+    if (consume(tok, TK_LEFT_BRACE))
+      node = array_init(func, &ident, tok);
+    else {
+      node = new_node(ND_ASSIGN);
+      node->lhs = var_node(func, &ident);
+      node->rhs = assign(func, tok);
+    }
   }
 
   return node;
