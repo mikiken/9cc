@@ -145,18 +145,18 @@ int calc_lvar_offset(Obj *lvar_list, Type *type) {
   }
 }
 
-Node *new_lvar_definition(Function *func, Type *type, Token *tok) {
+Node *new_lvar_definition(Function *func, Type *type, Token *ident) {
   Node *node = new_node(ND_LVARDEF);
-  Obj *lvar = find_var(func->lvar_list, tok);
+  Obj *lvar = find_var(func->lvar_list, ident);
 
   if (lvar != NULL) {
-    error_at(tok->start, "定義済みの変数または配列を再定義することはできません");
+    error_at(ident->start, "定義済みの変数または配列を再定義することはできません");
   }
   else { // 初登場のローカル変数の場合、localsの先頭に繋ぐ
     lvar = calloc(1, sizeof(Obj));
-    lvar->len = tok->len;
+    lvar->len = ident->len;
     lvar->offset = calc_lvar_offset(func->lvar_list, type);
-    lvar->name = tok->start;
+    lvar->name = ident->start;
     lvar->type = type;
     lvar->next = func->lvar_list;
     func->lvar_list = lvar;
@@ -211,15 +211,28 @@ Type *parse_type(Token *tok) {
     type = ty;
   }
   tok = tok->next; // 識別子を読み飛ばす
+
+  // 以下は変数の場合のみ
   // 配列型の場合
   if (consume_nostep(tok, TK_LEFT_BRACKET)) {
-    tok = tok->next; // tokを数字に進める
+    tok = tok->next;
     Type *ty_array = calloc(1, sizeof(Type));
     ty_array->kind = TYPE_ARRAY;
     ty_array->ptr_to = type;
-    ty_array->array_size = tok->val;
-    tok = tok->next; // tokを]に進める
-    expect_nostep(tok, TK_RIGHT_BRACKET);
+    // 配列の要素数が明示されていない場合
+    if (consume_nostep(tok, TK_RIGHT_BRACKET)) {
+      tok = tok->next;
+      if (consume_nostep(tok, TK_SEMICOLON))
+        error_at(tok->start, "配列の要素数が定義されていません");
+      expect_nostep(tok, TK_ASSIGN);
+      ty_array->array_size = 0;
+    }
+    // 要素数が明示されている場合
+    else {
+      ty_array->array_size = tok->val;
+      tok = tok->next; // tokを]に進める
+      expect_nostep(tok, TK_RIGHT_BRACKET);
+    }
     return ty_array;
   }
   return type;
@@ -438,18 +451,21 @@ Node *block_stmt(Function *func, Token *tok) {
   return head.next;
 }
 
-Node *array_init(Function *func, Token *ident, Token *tok) {
+Node *array_init(Function *func, Type *dec_type, Token *tok, Node *array_node) {
   Node head;
   Node *cur = &head;
-  for (int offset = 0; !consume(tok, TK_RIGHT_BRACE); offset++) {
+  int offset;
+  for (offset = 0; !consume(tok, TK_RIGHT_BRACE); offset++) {
     cur = cur->next = new_node(ND_STMT);
     cur->body = new_node(ND_ASSIGN);
-    cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, var_node(func, ident), new_num_node(offset)), NULL);
+    cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, array_node, new_num_node(offset)), NULL);
     cur->body->rhs = assign(func, tok);
     if (consume(tok, TK_RIGHT_BRACE))
-      return head.next;
+      break;
     expect(tok, TK_COMMA);
   }
+  if (!dec_type->array_size)
+    dec_type->array_size = offset + 1;
   return head.next;
 }
 
@@ -459,27 +475,44 @@ Node *declaration(Function *func, Type *dec_type, Token *tok) {
     error_at(tok->start, "void型の変数を定義することはできません");
 
   Token ident = *tok;
-  Node *node = new_lvar_definition(func, dec_type, &ident);
-  // 配列の場合
-  if (dec_type->kind == TYPE_ARRAY)
-    skip_token(tok, 4);
-  // 通常の変数の場合
-  else
-    next_token(tok);
 
-  // 初期化式がある場合
-  if (consume(tok, TK_ASSIGN)) {
-    // 配列の初期化式の場合
-    if (consume(tok, TK_LEFT_BRACE))
-      node = array_init(func, &ident, tok);
+  // 配列の場合
+  if (dec_type->kind == TYPE_ARRAY) {
+    // 配列の要素数が明示されている場合
+    if (dec_type->array_size) {
+      Node *node = new_lvar_definition(func, dec_type, &ident);
+      skip_token(tok, 4);
+      // 初期化式がある場合
+      if (consume(tok, TK_ASSIGN)) {
+        expect(tok, TK_LEFT_BRACE);
+        node = array_init(func, dec_type, tok, var_node(func, &ident));
+      }
+      return node;
+    }
+    // 配列の要素数が明示されていない場合
     else {
+      skip_token(tok, 3);
+      expect(tok, TK_ASSIGN);
+      expect(tok, TK_LEFT_BRACE);
+      Node *array_node = new_node(ND_LVAR);
+      Node *node = array_init(func, dec_type, tok, array_node);
+      (void)new_lvar_definition(func, dec_type, &ident);
+      *array_node = *var_node(func, &ident);
+      return node;
+    }
+  }
+  // 通常の変数の場合
+  else {
+    Node *node = new_lvar_definition(func, dec_type, &ident);
+    next_token(tok);
+    // 初期化式がある場合
+    if (consume(tok, TK_ASSIGN)) {
       node = new_node(ND_ASSIGN);
       node->lhs = var_node(func, &ident);
       node->rhs = assign(func, tok);
     }
+    return node;
   }
-
-  return node;
 }
 
 Node *stmt(Function *func, Token *tok) {

@@ -112,6 +112,29 @@ int array_test13() {
   return sum;
 }
 
+int array_test14() {
+  int a[5] = {
+      3,
+      4,
+      5,
+      6,
+      7,
+  };
+  int sum = 0;
+  for (int i = 0; i < 5; i++)
+    sum += a[i];
+  return sum;
+}
+
+int array_test15() {
+  int arr[] = {1, 2, 3, 4, 5};
+  int sum = 0;
+  for (int i = 0; i < 5; i++) {
+    sum += arr[i];
+  }
+  return sum * sizeof(arr) / 6;
+}
+
 int fib2(int n) {
   int fib[10];
   fib[0] = 0;
@@ -137,8 +160,12 @@ void array_test() {
   assert(3, array_test10(), "{int num; num = 0; int a[2]; a[0] = 1; a[num+1] = 2; int *p; p = a; return *p + *(p+1);}");
   assert(7, array_test11(), "{int a[2]; a[0] = 1; a[a[0]] = 6; int *p; p = a; return *p + *(p+1);}");
   assert(4, array_test12(), "{int a; a = 4; int b[2]; int *p; p = b; *p = 1; *(p+1) = 3; return a;}");
-  assert(15, array_test13(), "{int a[5] = {1, 2, 3, 4, 5}; int sum = 0; for (int i = 0; i < 5; i++) sum += a[i]; return sum;}");
   assert(21, fib2(8), "fib(8)");
+
+  // 初期化式
+  assert(15, array_test13(), "{int a[5] = {1, 2, 3, 4, 5}; int sum = 0; for (int i = 0; i < 5; i++) sum += a[i]; return sum;}");
+  assert(25, array_test14(), "{int a[5] = {3, 4, 5, 6, 7,}; int sum = 0; for (int i = 0; i < 5; i++) sum += a[i]; return sum;}");
+  assert(50, array_test15(), "{int arr[] = {1, 2, 3, 4, 5}; int sum = 0; for (int i = 0; i < 5; i++) sum += arr[i]; return sum * sizeof(arr) / 6;}");
 
   printf("\x1b[32m"); // 文字色を緑に設定
   printf("All array test cases have passed.\n\n");
