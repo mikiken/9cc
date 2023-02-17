@@ -31,12 +31,41 @@ Token *new_token(TokenKind kind, Token *cur, char *start, char *end) {
   return tok;
 }
 
-char read_escape_char(char *p) {
+// エスケープシーケンスの内、そのまま文字列として埋め込むとうまく動かないものについて
+// 対応するASCIIコードを返す
+char str_literal_escape_char(char *p) {
   switch (*p) {
     case 'a':
       return 7;
     case 'e':
       return 27;
+    default:
+      return *p;
+  }
+}
+
+char read_escape_char(char *p) {
+  switch (*p) {
+    case 'a':
+      return '\a';
+    case 'b':
+      return '\b';
+    case 't':
+      return '\t';
+    case 'n':
+      return '\n';
+    case 'v':
+      return '\v';
+    case 'f':
+      return '\f';
+    case 'r':
+      return '\r';
+    case 'e':
+      return '\e';
+    case '\'':
+      return '\'';
+    case '\\':
+      return '\\';
     default:
       return *p;
   }
@@ -356,7 +385,7 @@ Token *tokenize(char *user_input) {
         // エスケープシーケンスの場合
         if (*p == '\\') {
           buf[len++] = '\\';
-          buf[len++] = read_escape_char(p + 1);
+          buf[len++] = str_literal_escape_char(p + 1);
           p += 2;
         }
         else {
@@ -365,6 +394,25 @@ Token *tokenize(char *user_input) {
       }
       cur = new_token(TK_STR, cur, buf, buf + len - 1);
       p++; // ダブルクオートを読み飛ばす
+      continue;
+    }
+
+    // 文字リテラルの場合
+    if (startswith(p, "\'")) {
+      p++; // シングルクオートを読み飛ばす
+      // エスケープシーケンスの場合
+      if (*p == '\\') {
+        cur = new_token(TK_CHAR_LITERAL, cur, p, p + 1);
+        p++; // バックスラッシュを読み飛ばす
+        cur->val = read_escape_char(p);
+      }
+      else {
+        cur = new_token(TK_CHAR_LITERAL, cur, p, p);
+        cur->val = *p;
+      }
+      if (*(++p) != '\'')
+        error_at(p, "文字リテラルが閉じていません");
+      p++; // シングルクオートを読み飛ばす
       continue;
     }
 

@@ -160,6 +160,9 @@ void unexpected_symbol_error(char *loc, TokenKind kind) {
     case TK_STR:
       error_at(loc, "文字列リテラルではありません");
       return;
+    case TK_CHAR_LITERAL:
+      error_at(loc, "文字リテラルではありません");
+      return;
     case TK_EOF:
       error_at(loc, "入力の終端ではありません");
       return;

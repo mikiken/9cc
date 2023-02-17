@@ -71,6 +71,16 @@ int expect_number(Token *tok) {
   return val;
 }
 
+// 次のトークンが文字リテラルの場合、トークンを1つ読み進めてその数値を返す。
+// それ以外の場合にはエラーを報告する。
+int expect_char_literal(Token *tok) {
+  if (tok->kind != TK_CHAR_LITERAL)
+    error_at(tok->start, "文字リテラルではありません");
+  int val = tok->val;
+  next_token(tok);
+  return val;
+}
+
 // 指定した種類のトークンまで読み進める
 // 入れ子構造は考慮されない
 void skip_token_to(Token *tok, TokenKind kind) {
@@ -803,6 +813,11 @@ Node *primary(Function *func, Token *tok) {
     node->str_id = new_string_literal(tok)->str_id;
     next_token(tok);
     return node;
+  }
+
+  // 文字リテラルの場合
+  else if (consume_nostep(tok, TK_CHAR_LITERAL)) {
+    return new_num_node(expect_char_literal(tok));
   }
 
   // 整数の場合

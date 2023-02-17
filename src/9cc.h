@@ -81,6 +81,7 @@ typedef enum {
   TK_IDENT,             // 識別子
   TK_NUM,               // 整数トークン
   TK_STR,               // 文字列リテラル
+  TK_CHAR_LITERAL,      // 文字リテラル
   TK_EOF,               // 入力の終わりを表すトークン
   TK_RETURN,            // return
   TK_IF,                // if

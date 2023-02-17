@@ -109,6 +109,20 @@ void string_test() {
   assert(34, "\""[0], "{return \"\\\"\"[0];}");
   string_literal_test2();
 
+  // 文字リテラル
+  assert(97, 'a', "'a'");
+  assert(6, '6' - '0', "'6' - '0'");
+  assert(7, '\a', "'\\a'");
+  assert(8, '\b', "'\\b'");
+  assert(9, '\t', "'\\t'");
+  assert(10, '\n', "'\\n'");
+  assert(11, '\v', "'\\v'");
+  assert(12, '\f', "'\\f'");
+  assert(13, '\r', "'\\r'");
+  assert(27, '\e', "'\\e'");
+  assert(39, '\'', "'\\\''");
+  assert(92, '\\', "'\\\\");
+
   printf("\x1b[32m"); // 文字色を緑に設定
   printf("All string test cases have passed.\n\n");
   printf("\x1b[0m");
