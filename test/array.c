@@ -135,6 +135,11 @@ int array_test15() {
   return sum * sizeof(arr) / 6;
 }
 
+int array_test16() {
+  int x[5] = {1, 2, 3};
+  return x[3] + x[4];
+}
+
 int fib2(int n) {
   int fib[10];
   fib[0] = 0;
@@ -166,6 +171,7 @@ void array_test() {
   assert(15, array_test13(), "{int a[5] = {1, 2, 3, 4, 5}; int sum = 0; for (int i = 0; i < 5; i++) sum += a[i]; return sum;}");
   assert(25, array_test14(), "{int a[5] = {3, 4, 5, 6, 7,}; int sum = 0; for (int i = 0; i < 5; i++) sum += a[i]; return sum;}");
   assert(50, array_test15(), "{int arr[] = {1, 2, 3, 4, 5}; int sum = 0; for (int i = 0; i < 5; i++) sum += arr[i]; return sum * sizeof(arr) / 6;}");
+  assert(0, array_test16(), "{int x[5] = {1, 2, 3}; return x[3] + x[4];}");
 
   printf("\x1b[32m"); // 文字色を緑に設定
   printf("All array test cases have passed.\n\n");

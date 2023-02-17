@@ -464,8 +464,18 @@ Node *array_init(Function *func, Type *dec_type, Token *tok, Node *array_node) {
       break;
     expect(tok, TK_COMMA);
   }
+  // 配列の要素数が明示されていない場合
   if (!dec_type->array_size)
     dec_type->array_size = offset + 1;
+  // 初期化の要素数が配列の要素数に満たない場合は0で埋める
+  if (offset + 1 < dec_type->array_size) {
+    for (offset++; offset + 1 <= dec_type->array_size; offset++) {
+      cur = cur->next = new_node(ND_STMT);
+      cur->body = new_node(ND_ASSIGN);
+      cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, array_node, new_num_node(offset)), NULL);
+      cur->body->rhs = new_num_node(0);
+    }
+  }
   return head.next;
 }
 
