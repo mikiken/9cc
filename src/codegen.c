@@ -175,14 +175,38 @@ void sign_extension(int size) {
   }
 }
 
+void print_string_literal(int str_id, char *str) {
+  printf(".LC%d:\n", str_id);
+  printf("  .string \"");
+  for (char *p = str; *p != '\0'; p++) {
+    // '\a'や'\e'はgasの文法上、直接書けない('\'が無いものとしてエンコードされる)ので、
+    // 別途8進コードポイントにエンコードする
+    if (*p == '\\' && *(p + 1) == 'a') {
+      printf("\\%03o", '\a');
+      p++;
+      continue;
+    }
+    if (*p == '\\' && *(p + 1) == 'e') {
+      printf("\\%03o", '\e');
+      p++;
+      continue;
+    }
+    // それ以外のエスケープシーケンスの場合はgasがエンコードしてくれるので、
+    //そのまま'\' + '<文字>'として出力する
+    if (*p == '\\')
+      putchar(*p++);
+
+    putchar(*p);
+  }
+  printf("\"\n");
+}
+
 void gen_data_secton(Obj *gvar_list) {
   printf(".data\n");
   for (Obj *obj = gvar_list; obj->next != NULL; obj = obj->next) {
     // 文字列リテラルの場合
-    if (obj->init_data) {
-      printf(".LC%d:\n", obj->str_id);
-      printf("  .string \"%s\"\n", obj->init_data);
-    }
+    if (obj->init_data)
+      print_string_literal(obj->str_id, obj->init_data);
     // グローバル変数の場合
     else {
       printf("%s:\n", obj->name);

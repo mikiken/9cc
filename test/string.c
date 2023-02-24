@@ -105,7 +105,7 @@ void string_test() {
   assert(63, "\?"[0], "{return \"\\?\"[0];}");
   assert(39, "\'"[0], "{return \"\\\'\"[0];}");
   assert(92, "\\"[0], "{return \"\\\\\"[0];}");
-  assert(27, "\e"[0], "{return \"\\e\"[0];}");
+  assert(27, "\e"[0], "{return \"\\e\"[0];}"); // GNU拡張
   assert(34, "\""[0], "{return \"\\\"\"[0];}");
   string_literal_test2();
 

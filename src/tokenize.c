@@ -31,19 +31,6 @@ Token *new_token(TokenKind kind, Token *cur, char *start, char *end) {
   return tok;
 }
 
-// エスケープシーケンスの内、そのまま文字列として埋め込むとうまく動かないものについて
-// 対応するASCIIコードを返す
-char str_literal_escape_char(char *p) {
-  switch (*p) {
-    case 'a':
-      return 7;
-    case 'e':
-      return 27;
-    default:
-      return *p;
-  }
-}
-
 char read_escape_char(char *p) {
   switch (*p) {
     case 'a':
@@ -71,11 +58,15 @@ char read_escape_char(char *p) {
   }
 }
 
+// 閉じダブルクオートの位置を返す関数
 char *find_string_literal_end(char *start) {
   char *p;
+  // 更新式が条件式より先に評価されることに注意
   for (p = start; *p != '\"'; p++) {
-    if (*p == '\0' || *p == '\n')
+    // *pが行末またはプログラムの末尾の場合は文字列リテラルが閉じていない
+    if (*p == '\n' || *p == '\0')
       error_at(start, "文字列リテラルが閉じていません");
+    // エスケープシーケンスの場合は、forの更新式と合わせて2文字スキップする
     if (*p == '\\')
       p++;
   }
@@ -381,17 +372,8 @@ Token *tokenize(char *user_input) {
       char *end = find_string_literal_end(p);
       char *buf = calloc(end - start, sizeof(char));
       int len = 0;
-      while (*p != '\"') {
-        // エスケープシーケンスの場合
-        if (*p == '\\') {
-          buf[len++] = '\\';
-          buf[len++] = str_literal_escape_char(p + 1);
-          p += 2;
-        }
-        else {
-          buf[len++] = *p++;
-        }
-      }
+      while (p < end)
+        buf[len++] = *p++;
       cur = new_token(TK_STR, cur, buf, buf + len - 1);
       p++; // ダブルクオートを読み飛ばす
       continue;
