@@ -73,6 +73,31 @@ void string_literal_test2() {
   return;
 }
 
+int string_literal_test3() {
+  char str[] = "abc";
+  return str[2];
+}
+
+int string_literal_test4() {
+  char str[] = "abc";
+  return str[3];
+}
+
+int string_literal_test5() {
+  char str[] = "";
+  return str[0];
+}
+
+int string_literal_test6() {
+  char str[4] = "";
+  return str[2];
+}
+
+int string_literal_test7() {
+  char str[6] = "abc";
+  return str[3];
+}
+
 void string_test() {
   // char型
   assert(3, char_type_test1(), "{char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; return x[0] + y;}");
@@ -93,6 +118,11 @@ void string_test() {
   assert(4, sizeof("abc"), "sizeof(\"abc\")");
   assert(1, sizeof(""), "sizeof(\"\")");
   string_literal_test1();
+  assert(99, string_literal_test3(), "{char str[] = \"abc\"; return str[2];}");
+  assert(0, string_literal_test4(), "{char str[] = \"abc\"; return str[3];}");
+  assert(0, string_literal_test5(), "{char str[] = \"\"; return str[0];}");
+  assert(0, string_literal_test6(), "{char str[4] = \"\"; return str[2];}");
+  assert(0, string_literal_test7(), "{char str[6] = \"abc\";  return str[3];}");
 
   // エスケープシーケンス
   assert(7, "\a"[0], "{return \"\\a\"[0];}");

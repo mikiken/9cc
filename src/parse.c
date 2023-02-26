@@ -489,6 +489,37 @@ Node *array_init(Function *func, Type *dec_type, Token *tok, Node *array_node) {
   return head.next;
 }
 
+Node *init_str_literal_array(Function *func, Type *dec_type, Token *tok_str, Node *array_node) {
+  Node head;
+  Node *cur = &head;
+  int offset;
+  for (offset = 0; offset < tok_str->len; offset++) {
+    cur = cur->next = new_node(ND_STMT);
+    cur->body = new_node(ND_ASSIGN);
+    cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, array_node, new_num_node(offset)), NULL);
+    cur->body->rhs = new_num_node(*(tok_str->start + offset));
+  }
+  // NULL文字(ASCIIコードで0)を付加
+  cur = cur->next = new_node(ND_STMT);
+  cur->body = new_node(ND_ASSIGN);
+  cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, array_node, new_num_node(offset)), NULL);
+  cur->body->rhs = new_num_node(0);
+
+  // 配列の要素数(文字列リテラルの文字数+1)が明示されていない場合
+  if (!dec_type->array_size)
+    dec_type->array_size = offset + 2; // NULL文字があるので、要素数は (offset + 1) + 1 になる
+  // 初期化の要素数が配列の要素数に満たない場合は0で埋める
+  if (offset + 2 < dec_type->array_size) {
+    for (offset++; offset + 1 <= dec_type->array_size; offset++) {
+      cur = cur->next = new_node(ND_STMT);
+      cur->body = new_node(ND_ASSIGN);
+      cur->body->lhs = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, array_node, new_num_node(offset)), NULL);
+      cur->body->rhs = new_num_node(0);
+    }
+  }
+  return head.next;
+}
+
 // int i = 0, j = 0 のような記法は現状未対応
 Node *declaration(Function *func, Type *dec_type, Token *tok) {
   if (dec_type->kind == TYPE_VOID)
@@ -504,18 +535,33 @@ Node *declaration(Function *func, Type *dec_type, Token *tok) {
       skip_token(tok, 4);
       // 初期化式がある場合
       if (consume(tok, TK_ASSIGN)) {
-        expect(tok, TK_LEFT_BRACE);
-        node = array_init(func, dec_type, tok, var_node(func, &ident));
+        // 文字列リテラルの初期化式の場合
+        if (consume_nostep(tok, TK_STR)) {
+          node = init_str_literal_array(func, dec_type, tok, var_node(func, &ident));
+          next_token(tok);
+        }
+        else {
+          expect(tok, TK_LEFT_BRACE);
+          node = array_init(func, dec_type, tok, var_node(func, &ident));
+        }
       }
       return node;
     }
     // 配列の要素数が明示されていない場合
     else {
       skip_token(tok, 3);
-      expect(tok, TK_ASSIGN);
-      expect(tok, TK_LEFT_BRACE);
+      expect(tok, TK_ASSIGN); // 配列の要素数が明示されていない場合、初期化式が続くはず
+      Node *node;
       Node *array_node = new_node(ND_LVAR);
-      Node *node = array_init(func, dec_type, tok, array_node);
+      // 文字列リテラルの初期化式の場合
+      if (consume_nostep(tok, TK_STR)) {
+        node = init_str_literal_array(func, dec_type, tok, array_node);
+        next_token(tok);
+      }
+      else {
+        expect(tok, TK_LEFT_BRACE);
+        node = array_init(func, dec_type, tok, array_node);
+      }
       (void)new_lvar_definition(func, dec_type, &ident);
       *array_node = *var_node(func, &ident);
       return node;
