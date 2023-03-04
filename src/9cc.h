@@ -204,7 +204,7 @@ void unexpected_symbol_error(char *loc, TokenKind kind);
 
 Node *new_node(NodeKind kind);
 Type *new_type(TypeKind kind);
-int base_type_size(Type *type);
+int type_size(Type *type);
 
 char *read_file(char *path);
 Function *parse(Token *tok);

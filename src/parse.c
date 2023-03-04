@@ -120,7 +120,7 @@ Obj *find_var(Obj *var_list, Token *var_name) {
   return NULL;
 }
 
-int base_type_size(Type *type) {
+int type_size(Type *type) {
   switch (type->kind) {
     case TYPE_INT:
       return SIZE_INT;
@@ -128,6 +128,8 @@ int base_type_size(Type *type) {
       return SIZE_CHAR;
     case TYPE_PTR:
       return SIZE_PTR;
+    case TYPE_ARRAY:
+      return type_size(type->ptr_to) * type->array_size;
     default:
       error("未対応の型です");
   }
@@ -149,7 +151,7 @@ int calc_lvar_offset(Obj *lvar_list, Type *type) {
     case TYPE_PTR:
       return lvar_offset(lvar_list->offset, SIZE_PTR);
     case TYPE_ARRAY:
-      return lvar_offset(lvar_list->offset, base_type_size(type->ptr_to)) + base_type_size(type->ptr_to) * (type->array_size - 1);
+      return lvar_offset(lvar_list->offset, type_size(type->ptr_to)) + type_size(type->ptr_to) * (type->array_size - 1);
     default:
       error("未対応の型です");
   }
@@ -196,21 +198,21 @@ Node *var_node(Function *func, Token *var_name) {
   return node;
 }
 
-Type *parse_base_type(Token *tok) {
-  Type *base_type = calloc(1, sizeof(Type));
+Type *parse_primitive_type(Token *tok) {
+  Type *type = calloc(1, sizeof(Type));
   if (consume(tok, TK_INT))
-    base_type->kind = TYPE_INT;
+    type->kind = TYPE_INT;
   else if (consume(tok, TK_CHAR))
-    base_type->kind = TYPE_CHAR;
+    type->kind = TYPE_CHAR;
   else if (consume(tok, TK_VOID))
-    base_type->kind = TYPE_VOID;
+    type->kind = TYPE_VOID;
   else
-    base_type->kind = TYPE_NULL;
-  return base_type;
+    type->kind = TYPE_NULL;
+  return type;
 }
 
-Type *parse_type(Token *tok) {
-  Type *type = parse_base_type(tok);
+Type *parse_base_type(Token *tok) {
+  Type *type = parse_primitive_type(tok);
   if (type->kind == TYPE_NULL)
     return NULL;
   // ポインタ型の場合
@@ -220,32 +222,27 @@ Type *parse_type(Token *tok) {
     ty->ptr_to = type;
     type = ty;
   }
-  tok = tok->next; // 識別子を読み飛ばす
+  return type;
+}
 
-  // 以下は変数の場合のみ
+Type *parse_variable_type(Type *base_type, Token *tok) {
+  Type head;
+  Type *cur = &head;
   // 配列型の場合
-  if (consume_nostep(tok, TK_LEFT_BRACKET)) {
-    tok = tok->next;
-    Type *ty_array = calloc(1, sizeof(Type));
-    ty_array->kind = TYPE_ARRAY;
-    ty_array->ptr_to = type;
+  while (consume(tok, TK_LEFT_BRACKET)) {
+    cur = cur->ptr_to = new_type(TYPE_ARRAY);
     // 配列の要素数が明示されていない場合
-    if (consume_nostep(tok, TK_RIGHT_BRACKET)) {
-      tok = tok->next;
-      if (consume_nostep(tok, TK_SEMICOLON))
-        error_at(tok->start, "配列の要素数が定義されていません");
-      expect_nostep(tok, TK_ASSIGN);
-      ty_array->array_size = 0;
+    if (consume(tok, TK_RIGHT_BRACKET)) {
+      cur->array_size = 0;
     }
     // 要素数が明示されている場合
     else {
-      ty_array->array_size = tok->val;
-      tok = tok->next; // tokを]に進める
-      expect_nostep(tok, TK_RIGHT_BRACKET);
+      cur->array_size = expect_number(tok);
+      expect(tok, TK_RIGHT_BRACKET);
     }
-    return ty_array;
   }
-  return type;
+  cur->ptr_to = base_type;
+  return head.ptr_to;
 }
 
 void init_func_declaration() {
@@ -361,7 +358,7 @@ void parse_parameter(Function *func, Token *tok) {
     Obj *cur_param = init_params_head(func);
     do {
       cur_param->next = calloc(1, sizeof(Obj));
-      Type *type = parse_type(tok);
+      Type *type = parse_base_type(tok);
       if (type->kind == TYPE_VOID)
         error_at(tok->start, "void型の引数を定義することはできません");
       cur_param->next->type = type; // parameterの型
@@ -411,8 +408,8 @@ Function *program(Token *tok) {
   Function *cur_func = func_head;
 
   while (!is_eof(tok)) {
-    Type *ident_type = parse_type(tok); // 関数/グローバル変数の型
-    Token ident_name = *tok;            // 関数/グローバル変数名
+    Type *ident_type = parse_base_type(tok); // 関数/グローバル変数の型
+    Token ident_name = *tok;                 // 関数/グローバル変数名
     next_token(tok);
 
     // 関数の場合
@@ -432,9 +429,7 @@ Function *program(Token *tok) {
     }
     // グローバル変数の場合
     else {
-      new_global_var(ident_type, &ident_name);
-      if (ident_type->kind == TYPE_ARRAY)
-        skip_token(tok, 3);
+      new_global_var(parse_variable_type(ident_type, tok), &ident_name);
       expect(tok, TK_SEMICOLON);
     }
   }
@@ -448,11 +443,13 @@ Node *block_stmt(Function *func, Token *tok) {
   Node *cur = &head;
   while (!consume(tok, TK_RIGHT_BRACE)) {
     cur = cur->next = new_node(ND_STMT);
-    Type *lvar_dec_type = parse_type(tok);
-    Token ident = *tok;
-    // local variable declaration
-    if (lvar_dec_type) {
-      cur->body = declaration(func, lvar_dec_type, tok);
+    Type *base_type = parse_base_type(tok);
+    // ローカル変数の宣言の場合
+    if (base_type) {
+      Token ident = *tok;
+      next_token(tok); // 識別子を読み飛ばす
+      Type *lvar_dec_type = parse_variable_type(base_type, tok);
+      cur->body = declaration(func, lvar_dec_type, &ident, tok);
       expect(tok, TK_SEMICOLON);
     }
     else
@@ -461,6 +458,8 @@ Node *block_stmt(Function *func, Token *tok) {
   return head.next;
 }
 
+// 配列の初期化式をパースする関数
+// 初期化式の閉じ括弧 '}' はこの関数で消費される。
 Node *array_init(Function *func, Type *dec_type, Token *tok, Node *array_node) {
   Node head;
   Node *cur = &head;
@@ -520,65 +519,37 @@ Node *init_str_literal_array(Function *func, Type *dec_type, Token *tok_str, Nod
   return head.next;
 }
 
-// int i = 0, j = 0 のような記法は現状未対応
-Node *declaration(Function *func, Type *dec_type, Token *tok) {
+Node *declaration(Function *func, Type *dec_type, Token *ident, Token *tok) {
   if (dec_type->kind == TYPE_VOID)
     error_at(tok->start, "void型の変数を定義することはできません");
 
-  Token ident = *tok;
-
+  Node *node;
   // 配列の場合
   if (dec_type->kind == TYPE_ARRAY) {
-    // 配列の要素数が明示されている場合
-    if (dec_type->array_size) {
-      Node *node = new_lvar_definition(func, dec_type, &ident);
-      skip_token(tok, 4);
-      // 初期化式がある場合
-      if (consume(tok, TK_ASSIGN)) {
-        // 文字列リテラルの初期化式の場合
-        if (consume_nostep(tok, TK_STR)) {
-          node = init_str_literal_array(func, dec_type, tok, var_node(func, &ident));
-          next_token(tok);
-        }
-        else {
-          expect(tok, TK_LEFT_BRACE);
-          node = array_init(func, dec_type, tok, var_node(func, &ident));
-        }
-      }
-      return node;
-    }
-    // 配列の要素数が明示されていない場合
-    else {
-      skip_token(tok, 3);
-      expect(tok, TK_ASSIGN); // 配列の要素数が明示されていない場合、初期化式が続くはず
-      Node *node;
-      Node *array_node = new_node(ND_LVAR);
+    node = new_lvar_definition(func, dec_type, ident);
+    // 初期化式がある場合
+    if (consume(tok, TK_ASSIGN)) {
       // 文字列リテラルの初期化式の場合
-      if (consume_nostep(tok, TK_STR)) {
-        node = init_str_literal_array(func, dec_type, tok, array_node);
-        next_token(tok);
+      if (consume(tok, TK_STR)) {
+        node = init_str_literal_array(func, dec_type, tok, var_node(func, ident));
       }
       else {
         expect(tok, TK_LEFT_BRACE);
-        node = array_init(func, dec_type, tok, array_node);
+        node = array_init(func, dec_type, tok, var_node(func, ident));
       }
-      (void)new_lvar_definition(func, dec_type, &ident);
-      *array_node = *var_node(func, &ident);
-      return node;
     }
   }
   // 通常の変数の場合
   else {
-    Node *node = new_lvar_definition(func, dec_type, &ident);
-    next_token(tok);
+    node = new_lvar_definition(func, dec_type, ident);
     // 初期化式がある場合
     if (consume(tok, TK_ASSIGN)) {
       node = new_node(ND_ASSIGN);
-      node->lhs = var_node(func, &ident);
+      node->lhs = var_node(func, ident);
       node->rhs = assign(func, tok);
     }
-    return node;
   }
+  return node;
 }
 
 Node *stmt(Function *func, Token *tok) {
@@ -617,12 +588,17 @@ Node *stmt(Function *func, Token *tok) {
     node = new_node(ND_FOR);
     expect(tok, TK_LEFT_PARENTHESIS);
     if (!consume_nostep(tok, TK_SEMICOLON)) {
-      Type *lvar_dec_type = parse_type(tok);
+      Type *base_type = parse_base_type(tok);
       // カウンタ変数の宣言がある場合
-      if (lvar_dec_type)
-        node->init = declaration(func, lvar_dec_type, tok);
-      else
+      if (base_type) {
+        Token ident = *tok;
+        next_token(tok);
+        Type *lvar_dec_type = parse_variable_type(base_type, tok);
+        node->init = declaration(func, lvar_dec_type, &ident, tok);
+      }
+      else {
         node->init = expr(func, tok);
+      }
     }
     expect(tok, TK_SEMICOLON);
     if (!consume_nostep(tok, TK_SEMICOLON))
@@ -803,12 +779,12 @@ Node *unary(Function *func, Token *tok) {
 
 Node *postfix(Function *func, Token *tok) {
   Node *node = primary(func, tok);
-  if (consume(tok, TK_LEFT_BRACKET)) {
+  while (consume(tok, TK_LEFT_BRACKET)) {
     node = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, node, expr(func, tok)), NULL);
     expect(tok, TK_RIGHT_BRACKET);
   }
   // (a += 1) - 1としてパース
-  else if (consume(tok, TK_INCREMENT))
+  if (consume(tok, TK_INCREMENT))
     node = new_binary_node(ND_SUB, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_ADD, node, new_num_node(1))), new_num_node(1));
   // (a -= 1) + 1としてパース
   else if (consume(tok, TK_DECREMENT))

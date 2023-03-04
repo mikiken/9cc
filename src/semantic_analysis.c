@@ -119,7 +119,7 @@ bool is_array_type_node(Node *node) {
 TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
   if (!is_arithmeric_type(ty_1->kind) || !is_arithmeric_type(ty_2->kind))
     error("算術型ではありません");
-  return base_type_size(ty_1) >= base_type_size(ty_2) ? ty_1->kind : ty_2->kind;
+  return type_size(ty_1) >= type_size(ty_2) ? ty_1->kind : ty_2->kind;
 }
 
 void fix_rhs_type(Node *lhs, Node *rhs) {
