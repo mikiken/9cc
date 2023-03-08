@@ -81,18 +81,24 @@ Node *new_typed_binary(Node *node_typed, Node *lhs_typed, Node *rhs_typed) {
 }
 
 // ポインタ演算の調整用に型のサイズに合わせた整数nodeを返す
-Node *new_size_node(TypeKind kind) {
+Node *new_size_node(Type *type) {
   Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
-  if (kind == TYPE_INT) {
-    size->val = SIZE_INT;
+  switch (type->kind) {
+    case TYPE_INT:
+      size->val = SIZE_INT;
+      return size;
+    case TYPE_CHAR:
+      size->val = SIZE_CHAR;
+      return size;
+    case TYPE_PTR:
+      size->val = SIZE_PTR;
+      return size;
+    case TYPE_ARRAY:
+      size->val = type_size(type->ptr_to) * type->array_size;
+      return size;
+    default:
+      error("new_size_node() : 不明な型のため、型のサイズを計算できませんでした");
   }
-  else if (kind == TYPE_CHAR) {
-    size->val = SIZE_CHAR;
-  }
-  else {
-    size->val = SIZE_PTR;
-  }
-  return size;
 }
 
 Node *cast_array_to_pointer(Node *array_node) {
@@ -284,7 +290,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       }
       // 左辺がポインタ型、右辺がint型の場合
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
-        Node *size = new_size_node(lhs->type->ptr_to->kind);
+        Node *size = new_size_node(lhs->type->ptr_to);
         Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
         return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
       }
@@ -312,7 +318,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
 
       // 左辺がポインタ型、右辺がint型の場合
       if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_INT) {
-        Node *size = new_size_node(lhs->type->ptr_to->kind);
+        Node *size = new_size_node(lhs->type->ptr_to);
         Node *mul_scaling = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size, rhs);
         return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
       }
@@ -320,7 +326,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       else if (lhs->type->kind == TYPE_PTR && rhs->type->kind == TYPE_PTR) {
         if (lhs->type->ptr_to->kind != rhs->type->ptr_to->kind)
           error("異なる型へのポインタ同士で減算を行うことはできません");
-        Node *size = new_size_node(lhs->type->ptr_to->kind);
+        Node *size = new_size_node(lhs->type->ptr_to);
         Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
       }
