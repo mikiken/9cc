@@ -131,7 +131,7 @@ int type_size(Type *type) {
     case TYPE_ARRAY:
       return type_size(type->ptr_to) * type->array_size;
     default:
-      error("未対応の型です");
+      error("type_size() : 未対応の型のため、サイズを計算することができませんでした");
   }
 }
 

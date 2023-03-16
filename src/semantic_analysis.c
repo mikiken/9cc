@@ -83,22 +83,8 @@ Node *new_typed_binary(Node *node_typed, Node *lhs_typed, Node *rhs_typed) {
 // ポインタ演算の調整用に型のサイズに合わせた整数nodeを返す
 Node *new_size_node(Type *type) {
   Node *size = new_typed_node(new_type(TYPE_INT), new_node(ND_NUM));
-  switch (type->kind) {
-    case TYPE_INT:
-      size->val = SIZE_INT;
-      return size;
-    case TYPE_CHAR:
-      size->val = SIZE_CHAR;
-      return size;
-    case TYPE_PTR:
-      size->val = SIZE_PTR;
-      return size;
-    case TYPE_ARRAY:
-      size->val = type_size(type->ptr_to) * type->array_size;
-      return size;
-    default:
-      error("new_size_node() : 不明な型のため、型のサイズを計算できませんでした");
-  }
+  size->val = type_size(type);
+  return size;
 }
 
 Node *cast_array_to_pointer(Node *array_node) {
@@ -130,15 +116,15 @@ void fix_rhs_type(Node *lhs, Node *rhs) {
     rhs->type->kind = TYPE_CHAR;
 }
 
-Node *add_type_to_node(Obj *lvar_list, Node *node) {
+Node *add_type_to_node_old(Obj *lvar_list, Node *node) {
   switch (node->kind) {
     case ND_STMT: {
       Node typed_stmt_head;
       Node *typed_stmt = &typed_stmt_head;
 
       for (Node *n = node; n; n = n->next) {
-        typed_stmt = typed_stmt->next = calloc(1, sizeof(Node));
-        typed_stmt->body = add_type_to_node(lvar_list, n->body);
+        typed_stmt = typed_stmt->next = new_node(ND_STMT);
+        typed_stmt->body = add_type_to_node_old(lvar_list, n->body);
       }
       return typed_stmt_head.next;
     }
@@ -159,8 +145,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_node(find_gvar_by_name(node->gvar_name)->type, node);
     }
     case ND_ASSIGN: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 右辺が変数型の場合は先頭要素へのポインタにキャストする
       if (is_array_type_node(rhs))
         rhs = cast_array_to_pointer(rhs);
@@ -172,7 +158,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_binary(new_typed_node(new_type(lhs->type->kind), node), lhs, rhs);
     }
     case ND_DEREF: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
       if (is_array_type_node(lhs)) {
         lhs = cast_array_to_pointer(lhs);
       }
@@ -182,13 +168,13 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_binary(new_typed_node(lhs->type->ptr_to, node), lhs, NULL);
     }
     case ND_ADDR: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
       Type *ty = new_type(TYPE_PTR);
       ty->ptr_to = lhs->type;
       return new_typed_binary(new_typed_node(ty, node), lhs, NULL);
     }
     case ND_SIZEOF: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
       Node *size_node = new_node(ND_NUM);
       if (lhs->type->kind == TYPE_INT) {
         size_node->val = SIZE_INT;
@@ -214,7 +200,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     }
     case ND_RETURN: {
       if (node->lhs) {
-        Node *lhs = add_type_to_node(lvar_list, node->lhs);
+        Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
         return new_typed_binary(new_typed_node(new_type(lhs->type->kind), node), lhs, NULL);
       }
       else
@@ -222,10 +208,10 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     }
     case ND_IF: {
       Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
-      Node *cond = add_type_to_node(lvar_list, node->cond);
-      Node *then = add_type_to_node(lvar_list, node->then);
+      Node *cond = add_type_to_node_old(lvar_list, node->cond);
+      Node *then = add_type_to_node_old(lvar_list, node->then);
       if (node->els) {
-        Node *els = add_type_to_node(lvar_list, node->els);
+        Node *els = add_type_to_node_old(lvar_list, node->els);
         typed_node->els = els;
       }
       typed_node->cond = cond;
@@ -235,17 +221,17 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     case ND_FOR: {
       Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
       if (node->init) {
-        Node *init = add_type_to_node(lvar_list, node->init);
+        Node *init = add_type_to_node_old(lvar_list, node->init);
         typed_node->init = init;
       }
       if (node->cond) {
-        Node *cond = add_type_to_node(lvar_list, node->cond);
+        Node *cond = add_type_to_node_old(lvar_list, node->cond);
         typed_node->cond = cond;
       }
-      Node *then = add_type_to_node(lvar_list, node->then);
+      Node *then = add_type_to_node_old(lvar_list, node->then);
       typed_node->then = then;
       if (node->inc) {
-        Node *inc = add_type_to_node(lvar_list, node->inc);
+        Node *inc = add_type_to_node_old(lvar_list, node->inc);
         typed_node->inc = inc;
       }
       return typed_node;
@@ -253,7 +239,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     case ND_FUNCALL: {
       // 引数
       for (Node *n = node->expr; n; n = n->next) {
-        n->body = add_type_to_node(lvar_list, n->body);
+        n->body = add_type_to_node_old(lvar_list, n->body);
         // 引数に直接配列が書かれた場合はポインタにキャストする
         if (is_array_type_node(n->body))
           n->body = cast_array_to_pointer(n->body);
@@ -266,8 +252,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return typed_node;
     }
     case ND_ADD: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -299,8 +285,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       }
     }
     case ND_SUB: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -336,15 +322,15 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     }
     case ND_MUL:
     case ND_DIV: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       if (lhs->type->kind != rhs->type->kind)
         error("ポインタに対し乗法または除法を行うことはできません");
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_MOD: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       if (lhs->type->kind != TYPE_INT || rhs->type->kind != TYPE_INT)
         error("剰余演算子の左辺または右辺がint型ではありません");
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
@@ -353,8 +339,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -367,7 +353,7 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_NOT: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -375,8 +361,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
     }
     case ND_AND:
     case ND_OR: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -386,9 +372,9 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
     }
     case ND_COND: {
-      Node *cond = add_type_to_node(lvar_list, node->cond);
-      Node *then = add_type_to_node(lvar_list, node->then);
-      Node *els = add_type_to_node(lvar_list, node->els);
+      Node *cond = add_type_to_node_old(lvar_list, node->cond);
+      Node *then = add_type_to_node_old(lvar_list, node->then);
+      Node *els = add_type_to_node_old(lvar_list, node->els);
       // 各nodeに直接配列が書かれた場合はポインタにキャストする
       if (is_array_type_node(cond))
         cond = cast_array_to_pointer(cond);
@@ -403,8 +389,8 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
       return typed_node;
     }
     case ND_COMMA: {
-      Node *lhs = add_type_to_node(lvar_list, node->lhs);
-      Node *rhs = add_type_to_node(lvar_list, node->rhs);
+      Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
+      Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(lhs))
         lhs = cast_array_to_pointer(lhs);
@@ -418,10 +404,158 @@ Node *add_type_to_node(Obj *lvar_list, Node *node) {
   }
 }
 
+Node *add_type_to_node(Function *function, Node *node) {
+  switch (node->kind) {
+    case ND_STMT: {
+      Node typed_stmt_head;
+      Node *typed_stmt = &typed_stmt_head;
+      for (Node *n = node; n; n = n->next) {
+        typed_stmt = typed_stmt->next = new_node(ND_STMT);
+        typed_stmt->body = add_type_to_node(function, n->body);
+      }
+      return typed_stmt_head.next;
+    }
+    case ND_EXPR: {
+      Node typed_expr_head;
+      Node *typed_expr = &typed_expr_head;
+      for (Node *n = node; n; n = n->next) {
+        typed_expr = typed_expr->next = new_node(ND_EXPR);
+        typed_expr->body = add_type_to_node(function, n->body);
+      }
+      return typed_expr_head.next;
+    }
+    case ND_COMMA: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      Node *rhs = add_type_to_node(function, node->rhs);
+      return new_typed_binary(new_typed_node(rhs->type, node), lhs, rhs);
+    }
+    case ND_ADD:
+    case ND_SUB:
+    case ND_ASSIGN: {
+      // ND_ADD や ND_SUB でポインタ演算の際に ptr_to の型に合わせて offset を sizeof(ptr_to) 倍する処理は  で行う
+      // node自体の型は一旦 lhs の型に合わせておく
+      Node *lhs = add_type_to_node(function, node->lhs);
+      Node *rhs = add_type_to_node(function, node->rhs);
+      return new_typed_binary(new_typed_node(lhs->type, node), lhs, rhs);
+    }
+    case ND_MUL:
+    case ND_DIV:
+    case ND_MOD:
+    case ND_EQ:
+    case ND_NE:
+    case ND_LT:
+    case ND_LE:
+    case ND_AND:
+    case ND_OR: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      Node *rhs = add_type_to_node(function, node->rhs);
+      return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
+    }
+    case ND_NOT: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, NULL);
+    }
+    case ND_COND: {
+      Node *cond = add_type_to_node(function, node->cond);
+      Node *then = add_type_to_node(function, node->then);
+      Node *els = add_type_to_node(function, node->els);
+      Node *typed_node = new_typed_node(new_type(larger_arithmetic_type(then->type, els->type)), node);
+      typed_node->cond = cond;
+      typed_node->then = then;
+      typed_node->els = els;
+      return typed_node;
+    }
+    case ND_NUM:
+      return new_typed_node(new_type(TYPE_INT), node);
+    case ND_STR: {
+      Node *ref_to_str = new_typed_node(new_type(TYPE_PTR), new_node(ND_ADDR));
+      ref_to_str->type->ptr_to = new_type(TYPE_CHAR);
+      ref_to_str->lhs = new_typed_node(new_type(TYPE_CHAR), node);
+      return ref_to_str;
+    }
+    case ND_LVARDEF:
+    case ND_LVAR:
+      return new_typed_node(find_lvar_by_offset(function->lvar_list, node->offset)->type, node);
+    case ND_GVAR:
+      return new_typed_node(find_gvar_by_name(node->gvar_name)->type, node);
+    case ND_RETURN: {
+      // return <式>; の場合
+      if (node->lhs) {
+        Node *lhs = add_type_to_node(function, node->lhs);
+        return new_typed_binary(new_typed_node(lhs->type, node), lhs, NULL);
+      }
+      // return; の場合
+      else
+        return new_typed_node(new_type(TYPE_NULL), node);
+    }
+    case ND_IF: {
+      Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
+      Node *cond = add_type_to_node(function, node->cond);
+      Node *then = add_type_to_node(function, node->then);
+      if (node->els) {
+        Node *els = add_type_to_node(function, node->els);
+        typed_node->els = els;
+      }
+      typed_node->cond = cond;
+      typed_node->then = then;
+      return typed_node;
+    }
+    case ND_FOR: {
+      Node *typed_node = new_typed_node(new_type(TYPE_NULL), node);
+      if (node->init) {
+        Node *init = add_type_to_node(function, node->init);
+        typed_node->init = init;
+      }
+      if (node->cond) {
+        Node *cond = add_type_to_node(function, node->cond);
+        typed_node->cond = cond;
+      }
+      Node *then = add_type_to_node(function, node->then);
+      typed_node->then = then;
+      if (node->inc) {
+        Node *inc = add_type_to_node(function, node->inc);
+        typed_node->inc = inc;
+      }
+      return typed_node;
+    }
+    case ND_FUNCALL: {
+      // 引数の型の評価を行う
+      for (Node *arg = node->expr; arg; arg = arg->next)
+        arg = add_type_to_node(function, arg);
+      // 関数名から関数の宣言を探す
+      FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
+      if (!declaration)
+        error("%s() : 関数が宣言されていません", node->func_name);
+      return new_typed_node(declaration->ret_type, node);
+    }
+    case ND_ADDR: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      Type *ty = new_type(TYPE_PTR);
+      ty->ptr_to = lhs->type;
+      return new_typed_binary(new_typed_node(ty, node), lhs, NULL);
+    }
+    case ND_DEREF: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      return new_typed_binary(new_typed_node(lhs->type->ptr_to, node), lhs, NULL);
+    }
+    case ND_SIZEOF: {
+      Node *lhs = add_type_to_node(function, node->lhs);
+      Node *size_node = new_size_node(lhs->type);
+      // sizeof の lhs に文字列リテラルが直接書かれた場合
+      if (lhs->type->kind == TYPE_PTR)
+        if (lhs->lhs && lhs->lhs->kind == ND_STR)
+          size_node->val = SIZE_CHAR * (find_str_by_id(lhs->lhs->str_id)->len + 1); //　文字列+\0の文字数
+      return size_node;
+    }
+    default:
+      error("add_type_to_node() : nodeに型を付与することができませんでした");
+  }
+}
+
 // parseして得られたASTに型情報を付与する
 // 深さ優先探索で下りながら再帰的に呼び出す
 void add_type_to_ast(Function *func_list) {
   for (Function *f = func_list; f; f = f->next) {
-    f->body = add_type_to_node(f->lvar_list, f->body); // 型付きASTを構築
+    f->body = add_type_to_node_old(f->lvar_list, f->body); // 型付きASTを構築
   }
 }
