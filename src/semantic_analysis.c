@@ -764,13 +764,28 @@ void semantic_analysis(Node *node) {
     case ND_FUNCALL:
       return;
     case ND_ADDR:
+      semantic_analysis(node->lhs);
+      // node自体はポインタ型のはずなので、もしそうでなければエラーにする
+      if (is_ptr_type(node->type))
+        return;
+      else
+        error("semantic_analysis() : アドレス演算子を適用することができませんでした");
       return;
     case ND_DEREF:
+      semantic_analysis(node->lhs);
+      // 左辺に配列の場合はポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 左辺がポインタ型でない場合はエラーにする
+      if (!is_arithmeric_type(node->lhs->type))
+        error("semantic_analysis() : ポインタでないものを間接参照することはできません");
+      // node自体の型はlhs->type->ptr_toに合わせる
+      node->type = node->lhs->type->ptr_to;
       return;
     case ND_SIZEOF:
       return;
     default:
-      error("");
+      error("semantic_analysis() : 意味解析を行うことができませんでした");
   }
 }
 
