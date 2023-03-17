@@ -645,13 +645,23 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : 不正な除算の剰余を計算することはできません");
     case ND_EQ:
-      return;
     case ND_NE:
-      return;
     case ND_LT:
-      return;
     case ND_LE:
-      return;
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 右辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // 両辺の型が異なる場合はエラーにする
+      if (node->lhs->type->kind != node->rhs->type->kind)
+        error("異なる型に対して比較を行うことはできません");
+      // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
+      if (node->type->kind == TYPE_INT)
+        return;
+      else
+        error("semantic_analysis() : 比較演算子を適用できませんでした");
     case ND_NOT:
       return;
     case ND_AND:
