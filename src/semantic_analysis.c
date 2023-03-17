@@ -110,16 +110,11 @@ Node *cast_array_to_pointer(Node *array_node) {
 }
 
 bool is_arithmeric_type(TypeKind kind) {
-  if (kind == TYPE_INT || kind == TYPE_CHAR)
-    return true;
-  return false;
+  return kind == TYPE_INT || kind == TYPE_CHAR;
 }
 
 bool is_array_type_node(Node *node) {
-  if ((node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY)
-    return true;
-  else
-    return false;
+  return (node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY;
 }
 
 TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
