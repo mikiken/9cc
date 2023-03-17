@@ -565,6 +565,8 @@ void semantic_analysis(Node *node) {
     case ND_COMMA:
       return;
     case ND_ADD:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
@@ -595,6 +597,8 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : 不正な加算を行うことはできません");
     case ND_SUB:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
       // 左辺が配列の場合、ポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
@@ -628,6 +632,8 @@ void semantic_analysis(Node *node) {
         error("semantic_analysis() : 不正な減算を行うことはできません");
     case ND_MUL:
     case ND_DIV:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
       // 左辺または右辺にポインタ型が来た場合はエラーにする
       if (is_ptr_type(node->lhs) || is_ptr_type(node->rhs))
         error("semantic_analysis() : ポインタに対し乗法または除法を行うことはできません");
@@ -637,6 +643,8 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : 不正な乗算または除算を行うことはできません");
     case ND_MOD:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
       if (node->lhs->type->kind != TYPE_INT || node->rhs->type->kind != TYPE_INT)
         error("semantic_analysis() : 剰余演算子の左辺または右辺がint型ではありません");
       // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
@@ -648,6 +656,8 @@ void semantic_analysis(Node *node) {
     case ND_NE:
     case ND_LT:
     case ND_LE:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
@@ -670,8 +680,8 @@ void semantic_analysis(Node *node) {
       return;
     case ND_COND:
       return;
-    // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
     case ND_ASSIGN:
+      // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
       return;
     case ND_NUM:
       return;
