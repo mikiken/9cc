@@ -103,6 +103,10 @@ bool is_array_type_node(Node *node) {
   return (node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY;
 }
 
+bool is_ptr_type(Type *type) {
+  return type->kind == TYPE_PTR;
+}
+
 TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
   if (!is_arithmeric_type(ty_1) || !is_arithmeric_type(ty_2))
     error("算術型ではありません");
@@ -623,11 +627,23 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : 不正な減算を行うことはできません");
     case ND_MUL:
-      return;
     case ND_DIV:
-      return;
+      // 左辺または右辺にポインタ型が来た場合はエラーにする
+      if (is_ptr_type(node->lhs) || is_ptr_type(node->rhs))
+        error("semantic_analysis() : ポインタに対し乗法または除法を行うことはできません");
+      // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
+      if (node->type->kind == TYPE_INT)
+        return;
+      else
+        error("semantic_analysis() : 不正な乗算または除算を行うことはできません");
     case ND_MOD:
-      return;
+      if (node->lhs->type->kind != TYPE_INT || node->rhs->type->kind != TYPE_INT)
+        error("semantic_analysis() : 剰余演算子の左辺または右辺がint型ではありません");
+      // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
+      if (node->type->kind == TYPE_INT)
+        return;
+      else
+        error("semantic_analysis() : 不正な除算の剰余を計算することはできません");
     case ND_EQ:
       return;
     case ND_NE:
