@@ -558,6 +558,13 @@ Node *add_type_to_node(Function *function, Node *node) {
 
 void semantic_analysis(Node *node) {
   switch (node->kind) {
+    // 構文木の葉となるnodeでは何もしない
+    case ND_NUM:
+    case ND_STR:
+    case ND_LVARDEF:
+    case ND_LVAR:
+    case ND_GVAR:
+      return;
     case ND_STMT:
       return;
     case ND_EXPR:
@@ -714,12 +721,6 @@ void semantic_analysis(Node *node) {
     case ND_ASSIGN:
       // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
       return;
-    case ND_NUM:
-    case ND_STR:
-    case ND_LVARDEF:
-    case ND_LVAR:
-    case ND_GVAR:
-      return;
     case ND_RETURN:
       // return <式>; の場合
       if (node->lhs) {
@@ -737,9 +738,29 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : return文の意味解析を行うことができませんでした");
     case ND_IF:
-      return;
+      semantic_analysis(node->cond);
+      semantic_analysis(node->then);
+      if (node->els)
+        semantic_analysis(node->els);
+      // node自体の型はNULLのはず
+      if (node->type->kind == TYPE_NULL)
+        return;
+      else
+        error("semantic_analysis() : if文の意味解析を行うことができませんでした");
     case ND_FOR:
-      return;
+      if (node->init)
+        semantic_analysis(node->inti);
+      if (node->cond)
+        semantic_analysis(node->cond);
+      // for文の中身の処理
+      semantic_analysis(node->then);
+      if (node->inc)
+        semantic_analysis(node->inc);
+      // node自体の型はNULLのはず
+      if (node->type->kind == TYPE_NULL)
+        return;
+      else
+        error("semantic_analysis() : if文の意味解析を行うことができませんでした");
     case ND_FUNCALL:
       return;
     case ND_ADDR:
