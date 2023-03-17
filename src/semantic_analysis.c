@@ -673,11 +673,30 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : 比較演算子を適用できませんでした");
     case ND_NOT:
-      return;
+      semantic_analysis(node->lhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
+      if (node->type->kind == TYPE_INT)
+        return;
+      else
+        error("semantic_analysis() : 否定演算子を適用できませんでした");
     case ND_AND:
-      return;
     case ND_OR:
-      return;
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
+      // 左辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 右辺が配列の場合はポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
+      if (node->type->kind == TYPE_INT)
+        return;
+      else
+        error("semantic_analysis() : AND演算子またはOR演算子を適用できませんでした");
     case ND_COND:
       return;
     case ND_ASSIGN:
