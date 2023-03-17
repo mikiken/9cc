@@ -715,17 +715,27 @@ void semantic_analysis(Node *node) {
       // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
       return;
     case ND_NUM:
-      return;
     case ND_STR:
-      return;
     case ND_LVARDEF:
-      return;
     case ND_LVAR:
-      return;
     case ND_GVAR:
       return;
     case ND_RETURN:
-      return;
+      // return <式>; の場合
+      if (node->lhs) {
+        semantic_analysis(node->lhs);
+        // 左辺が配列の場合はポインタにキャストする
+        if (is_array_type_node(node->lhs))
+          node->lhs = cast_array_to_pointer(node->lhs);
+        // node自体の型は左辺の型に合わせる
+        node->type = node->lhs->type;
+        return;
+      }
+      // return; の場合はnode自体の型はNULLのはず
+      else if (node->type->kind == TYPE_NULL)
+        return;
+      else
+        error("semantic_analysis() : return文の意味解析を行うことができませんでした");
     case ND_IF:
       return;
     case ND_FOR:
