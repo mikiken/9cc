@@ -698,6 +698,18 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : AND演算子またはOR演算子を適用できませんでした");
     case ND_COND:
+      semantic_analysis(node->cond);
+      semantic_analysis(node->then);
+      semantic_analysis(node->els);
+      // 各nodeに直接配列が書かれた場合はポインタにキャストする
+      if (is_array_type_node(node->cond))
+        node->cond = cast_array_to_pointer(node->cond);
+      if (is_array_type_node(node->then))
+        node->then = cast_array_to_pointer(node->then);
+      if (is_array_type_node(node->els))
+        node->els = cast_array_to_pointer(node->els);
+      // node自体の型はthenかelsの大きい方に合わせておく
+      node->type = new_type(larger_arithmetic_type(node->then->type, node->els->type));
       return;
     case ND_ASSIGN:
       // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
