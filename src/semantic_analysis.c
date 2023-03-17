@@ -95,8 +95,8 @@ Node *cast_array_to_pointer(Node *array_node) {
   return new_typed_binary(new_typed_node(ty_addr, ref_to_array), array_node, NULL);
 }
 
-bool is_arithmeric_type(TypeKind kind) {
-  return kind == TYPE_INT || kind == TYPE_CHAR;
+bool is_arithmeric_type(Type *type) {
+  return type->kind == TYPE_INT || type->kind == TYPE_CHAR;
 }
 
 bool is_array_type_node(Node *node) {
@@ -104,7 +104,7 @@ bool is_array_type_node(Node *node) {
 }
 
 TypeKind larger_arithmetic_type(Type *ty_1, Type *ty_2) {
-  if (!is_arithmeric_type(ty_1->kind) || !is_arithmeric_type(ty_2->kind))
+  if (!is_arithmeric_type(ty_1) || !is_arithmeric_type(ty_2))
     error("算術型ではありません");
   return type_size(ty_1) >= type_size(ty_2) ? ty_1->kind : ty_2->kind;
 }
@@ -276,7 +276,7 @@ Node *add_type_to_node_old(Obj *lvar_list, Node *node) {
         return new_typed_binary(new_typed_node(lhs->type, node), lhs, mul_scaling);
       }
       // 両辺が算術型の場合
-      else if (is_arithmeric_type(lhs->type->kind) && is_arithmeric_type(rhs->type->kind)) {
+      else if (is_arithmeric_type(lhs->type) && is_arithmeric_type(rhs->type)) {
         fix_rhs_type(lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
       }
@@ -312,7 +312,7 @@ Node *add_type_to_node_old(Obj *lvar_list, Node *node) {
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
       }
       // 両辺が算術型の場合
-      else if (is_arithmeric_type(lhs->type->kind) && is_arithmeric_type(rhs->type->kind)) {
+      else if (is_arithmeric_type(lhs->type) && is_arithmeric_type(rhs->type)) {
         fix_rhs_type(lhs, rhs);
         return new_typed_binary(new_typed_node(new_type(TYPE_INT), node), lhs, rhs);
       }
@@ -549,6 +549,130 @@ Node *add_type_to_node(Function *function, Node *node) {
     }
     default:
       error("add_type_to_node() : nodeに型を付与することができませんでした");
+  }
+}
+
+void semantic_analysis(Node *node) {
+  switch (node->kind) {
+    case ND_STMT:
+      return;
+    case ND_EXPR:
+      return;
+    case ND_COMMA:
+      return;
+    case ND_ADD:
+      // 左辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 右辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // ポインタ同士の加算は禁止されているのでエラーにする
+      if (is_ptr_type(node->lhs->type) && is_ptr_type(node->rhs->type))
+        error("semantic_analysis() : ポインタ同士を加算することはできません");
+      // 左辺がint型、右辺がポインタの場合は両辺を入れ替え、node自体の型も付け直す
+      if (node->lhs->type->kind == TYPE_INT && node->rhs->type->kind == TYPE_PTR) {
+        Node *original_lhs = node->lhs;
+        node->lhs = node->rhs;
+        node->rhs = original_lhs;
+        node->type = node->lhs->type;
+      }
+      // node自体の型は左辺の型に合わせる
+      node->type = node->lhs->type;
+      // 左辺がポインタ型、右辺がint型の場合
+      if (is_ptr_type(node->lhs) && rhs->type->kind == TYPE_INT) {
+        Node *size_node = new_size_node(lhs->type->ptr_to);
+        node->rhs = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size_node, node->rhs);
+        return;
+      }
+      // 両辺が算術型の場合
+      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type))
+        return;
+      else
+        error("semantic_analysis() : 不正な加算を行うことはできません");
+    case ND_SUB:
+      // 左辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 右辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // 左辺がint型、右辺がポインタ型の減算は禁止されているのでエラーにする
+      if (node->lhs->type->kind == TYPE_INT && is_ptr_type(node->rhs->type))
+        error("semantic_analysis() : 左辺がint型,右辺がポインタ型の減算を行うことはできません");
+      // node自体の型は左辺の型に合わせる
+      node->type = node->lhs->type;
+      // 左辺がポインタ型、右辺がint型の場合
+      if (is_ptr_type(node->lhs->type) && node->rhs->type->kind == TYPE_INT) {
+        Node *size_node = new_size_node(lhs->type->ptr_to);
+        node->rhs = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size_node, node->rhs);
+        return;
+      }
+      // 両辺がポインタ型の場合
+      else if (is_ptr_type(node->lhs->type) && is_ptr_type(node->rhs->type)) {
+        if (node->lhs->type->ptr_to->kind != node->rhs->type->ptr_to->kind)
+          error("semantic_analysis() : 異なる型へのポインタ同士で減算を行うことはできません");
+        Node *size = new_size_node(lhs->type->ptr_to);
+        Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
+        node = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
+        return;
+      }
+      // 両辺が算術型の場合
+      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type))
+        return;
+      else
+        error("semantic_analysis() : 不正な減算を行うことはできません");
+    case ND_MUL:
+      return;
+    case ND_DIV:
+      return;
+    case ND_MOD:
+      return;
+    case ND_EQ:
+      return;
+    case ND_NE:
+      return;
+    case ND_LT:
+      return;
+    case ND_LE:
+      return;
+    case ND_NOT:
+      return;
+    case ND_AND:
+      return;
+    case ND_OR:
+      return;
+    case ND_COND:
+      return;
+    // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
+    case ND_ASSIGN:
+      return;
+    case ND_NUM:
+      return;
+    case ND_STR:
+      return;
+    case ND_LVARDEF:
+      return;
+    case ND_LVAR:
+      return;
+    case ND_GVAR:
+      return;
+    case ND_RETURN:
+      return;
+    case ND_IF:
+      return;
+    case ND_FOR:
+      return;
+    case ND_FUNCALL:
+      return;
+    case ND_ADDR:
+      return;
+    case ND_DEREF:
+      return;
+    case ND_SIZEOF:
+      return;
+    default:
+      error("");
   }
 }
 
