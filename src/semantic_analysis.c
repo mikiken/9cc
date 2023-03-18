@@ -151,7 +151,7 @@ Node *add_type_to_node_old(Obj *lvar_list, Node *node) {
     case ND_ASSIGN: {
       Node *lhs = add_type_to_node_old(lvar_list, node->lhs);
       Node *rhs = add_type_to_node_old(lvar_list, node->rhs);
-      // 右辺が変数型の場合は先頭要素へのポインタにキャストする
+      // 右辺が配列型の場合は先頭要素へのポインタにキャストする
       if (is_array_type_node(rhs))
         rhs = cast_array_to_pointer(rhs);
       fix_rhs_type(lhs, rhs);
@@ -730,7 +730,23 @@ void semantic_analysis(Node *node) {
       node->type = new_type(larger_arithmetic_type(node->then->type, node->els->type));
       return;
     case ND_ASSIGN:
-      // int型の数値をchar型に代入しようとしているものは、ここでよしなに処理すべき
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
+      // 左辺に直接配列が来た場合はエラーにする
+      if (is_array_type_node(node->lhs))
+        error("semantic_analysis() : 配列に対して直接式の値を代入することはできません1");
+      // 右辺が配列型の場合は先頭要素へのポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // node自体の型は左辺の型に合わせる
+      node->type = node->lhs->type;
+      // 左辺がchar型、右辺がint型の場合
+      if (node->lhs->type->kind == TYPE_CHAR && node->rhs->type->kind == TYPE_INT) {
+        return;
+      }
+      // 両辺で型が異なる場合はエラーにする
+      if (node->lhs->type->kind != node->rhs->type->kind)
+        error("semantic_analysis() : 代入式の両辺の型が異なります");
       return;
     case ND_RETURN:
       // return <式>; の場合
