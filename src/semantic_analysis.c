@@ -604,8 +604,8 @@ void semantic_analysis(Node *node) {
       // node自体の型は左辺の型に合わせる
       node->type = node->lhs->type;
       // 左辺がポインタ型、右辺がint型の場合
-      if (is_ptr_type(node->lhs) && rhs->type->kind == TYPE_INT) {
-        Node *size_node = new_size_node(lhs->type->ptr_to);
+      if (is_ptr_type(node->lhs->type) && node->rhs->type->kind == TYPE_INT) {
+        Node *size_node = new_size_node(node->lhs->type->ptr_to);
         node->rhs = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size_node, node->rhs);
         return;
       }
@@ -630,7 +630,7 @@ void semantic_analysis(Node *node) {
       node->type = node->lhs->type;
       // 左辺がポインタ型、右辺がint型の場合
       if (is_ptr_type(node->lhs->type) && node->rhs->type->kind == TYPE_INT) {
-        Node *size_node = new_size_node(lhs->type->ptr_to);
+        Node *size_node = new_size_node(node->lhs->type->ptr_to);
         node->rhs = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size_node, node->rhs);
         return;
       }
@@ -638,8 +638,8 @@ void semantic_analysis(Node *node) {
       else if (is_ptr_type(node->lhs->type) && is_ptr_type(node->rhs->type)) {
         if (node->lhs->type->ptr_to->kind != node->rhs->type->ptr_to->kind)
           error("semantic_analysis() : 異なる型へのポインタ同士で減算を行うことはできません");
-        Node *size = new_size_node(lhs->type->ptr_to);
-        Node *diff_addr = new_typed_binary(new_typed_node(lhs->type, new_node(ND_SUB)), lhs, rhs);
+        Node *size = new_size_node(node->lhs->type->ptr_to);
+        Node *diff_addr = new_typed_binary(new_typed_node(node->lhs->type, new_node(ND_SUB)), node->lhs, node->rhs);
         node = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
         return;
       }
@@ -653,7 +653,7 @@ void semantic_analysis(Node *node) {
       semantic_analysis(node->lhs);
       semantic_analysis(node->rhs);
       // 左辺または右辺にポインタ型が来た場合はエラーにする
-      if (is_ptr_type(node->lhs) || is_ptr_type(node->rhs))
+      if (is_ptr_type(node->lhs->type) || is_ptr_type(node->rhs->type))
         error("semantic_analysis() : ポインタに対し乗法または除法を行うことはできません");
       // nodeそのものはint型であるはずなので、もしそうでなければエラーにする
       if (node->type->kind == TYPE_INT)
@@ -776,7 +776,7 @@ void semantic_analysis(Node *node) {
         error("semantic_analysis() : if文の意味解析を行うことができませんでした");
     case ND_FOR:
       if (node->init)
-        semantic_analysis(node->inti);
+        semantic_analysis(node->init);
       if (node->cond)
         semantic_analysis(node->cond);
       // for文の中身の処理
@@ -800,11 +800,11 @@ void semantic_analysis(Node *node) {
       return;
     case ND_DEREF:
       semantic_analysis(node->lhs);
-      // 左辺に配列の場合はポインタにキャストする
+      // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
       // 左辺がポインタ型でない場合はエラーにする
-      if (!is_arithmeric_type(node->lhs->type))
+      if (!is_ptr_type(node->lhs->type))
         error("semantic_analysis() : ポインタでないものを間接参照することはできません");
       // node自体の型はlhs->type->ptr_toに合わせる
       node->type = node->lhs->type->ptr_to;
@@ -818,6 +818,8 @@ void semantic_analysis(Node *node) {
 // 深さ優先探索で下りながら再帰的に呼び出す
 void add_type_to_ast(Function *func_list) {
   for (Function *f = func_list; f; f = f->next) {
-    f->body = add_type_to_node_old(f->lvar_list, f->body); // 型付きASTを構築
+    //f->body = add_type_to_node_old(f->lvar_list, f->body); // 型付きASTを構築
+    f->body = add_type_to_node(f, f->body);
+    semantic_analysis(f->body);
   }
 }
