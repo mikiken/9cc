@@ -558,18 +558,29 @@ Node *add_type_to_node(Function *function, Node *node) {
 
 void semantic_analysis(Node *node) {
   switch (node->kind) {
-    // 構文木の葉となるnodeでは何もしない
     case ND_NUM:
     case ND_STR:
     case ND_LVARDEF:
     case ND_LVAR:
     case ND_GVAR:
+    case ND_SIZEOF:
       return;
     case ND_STMT:
-      return;
     case ND_EXPR:
+      for (Node *n = node; n; n = n->next)
+        semantic_analysis(n->body);
       return;
     case ND_COMMA:
+      semantic_analysis(node->lhs);
+      semantic_analysis(node->rhs);
+      // 左辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->lhs))
+        node->lhs = cast_array_to_pointer(node->lhs);
+      // 右辺が配列の場合、ポインタにキャストする
+      if (is_array_type_node(node->rhs))
+        node->rhs = cast_array_to_pointer(node->rhs);
+      // node自体の型は右辺の型に合わせる
+      node->type = node->rhs->type;
       return;
     case ND_ADD:
       semantic_analysis(node->lhs);
@@ -781,8 +792,6 @@ void semantic_analysis(Node *node) {
         error("semantic_analysis() : ポインタでないものを間接参照することはできません");
       // node自体の型はlhs->type->ptr_toに合わせる
       node->type = node->lhs->type->ptr_to;
-      return;
-    case ND_SIZEOF:
       return;
     default:
       error("semantic_analysis() : 意味解析を行うことができませんでした");
