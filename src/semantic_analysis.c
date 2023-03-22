@@ -525,11 +525,11 @@ Node *add_type_to_node(Function *function, Node *node) {
     case ND_FUNCALL: {
       // 引数の型の評価を行う
       for (Node *arg = node->expr; arg; arg = arg->next)
-        arg = add_type_to_node(function, arg);
+        arg->body = add_type_to_node(function, arg->body);
       // 関数名から関数の宣言を探す
       FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
       if (!declaration)
-        error("%s() : 関数が宣言されていません", node->func_name);
+        error("add_type_to_node() : 関数 %s() が宣言されていません", node->func_name);
       return new_typed_node(declaration->ret_type, node);
     }
     case ND_ADDR: {
@@ -789,7 +789,20 @@ void semantic_analysis(Node *node) {
       else
         error("semantic_analysis() : if文の意味解析を行うことができませんでした");
     case ND_FUNCALL:
-      return;
+      for (Node *arg = node->expr; arg; arg = arg->next) {
+        semantic_analysis(arg->body);
+        if (is_array_type_node(arg->body))
+          arg->body = cast_array_to_pointer(arg->body);
+      }
+      // 関数名から関数の宣言を探す
+      FuncDeclaration *declaration = find_declaration_by_name(node->func_name);
+      if (!declaration)
+        error("semantic_analysis() : 関数 %s() が宣言されていません", node->func_name);
+      // node自体の型は関数宣言の型と同じであるはず
+      if (node->type->kind == declaration->ret_type->kind)
+        return;
+      else
+        error("semantic_analysis(): 関数呼び出しの意味解析を行うことができませんでした");
     case ND_ADDR:
       semantic_analysis(node->lhs);
       // node自体はポインタ型のはずなので、もしそうでなければエラーにする
