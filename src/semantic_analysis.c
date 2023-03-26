@@ -640,7 +640,7 @@ void semantic_analysis(Node *node) {
           error("semantic_analysis() : 異なる型へのポインタ同士で減算を行うことはできません");
         Node *size = new_size_node(node->lhs->type->ptr_to);
         Node *diff_addr = new_typed_binary(new_typed_node(node->lhs->type, new_node(ND_SUB)), node->lhs, node->rhs);
-        node = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
+        *node = *new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_DIV)), diff_addr, size);
         return;
       }
       // 両辺が算術型の場合
