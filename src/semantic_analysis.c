@@ -601,17 +601,19 @@ void semantic_analysis(Node *node) {
         node->rhs = original_lhs;
         node->type = node->lhs->type;
       }
-      // node自体の型は左辺の型に合わせる
-      node->type = node->lhs->type;
       // 左辺がポインタ型、右辺がint型の場合
       if (is_ptr_type(node->lhs->type) && node->rhs->type->kind == TYPE_INT) {
+        // node自体の型は左辺の型に合わせる
+        node->type = node->lhs->type;
         Node *size_node = new_size_node(node->lhs->type->ptr_to);
         node->rhs = new_typed_binary(new_typed_node(new_type(TYPE_INT), new_node(ND_MUL)), size_node, node->rhs);
         return;
       }
       // 両辺が算術型の場合
-      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type))
+      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type)) {
+        node->type = new_type(TYPE_INT); // node自体の型はint型にする
         return;
+      }
       else
         error("semantic_analysis() : 不正な加算を行うことはできません");
     case ND_SUB:
@@ -644,8 +646,10 @@ void semantic_analysis(Node *node) {
         return;
       }
       // 両辺が算術型の場合
-      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type))
+      else if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type)) {
+        node->type = new_type(TYPE_INT); // node自体の型はint型にする
         return;
+      }
       else
         error("semantic_analysis() : 不正な減算を行うことはできません");
     case ND_MUL:
@@ -740,9 +744,19 @@ void semantic_analysis(Node *node) {
         node->rhs = cast_array_to_pointer(node->rhs);
       // node自体の型は左辺の型に合わせる
       node->type = node->lhs->type;
-      // 左辺がchar型、右辺がint型の場合
-      if (node->lhs->type->kind == TYPE_CHAR && node->rhs->type->kind == TYPE_INT) {
-        return;
+      // 両辺が算術型の場合
+      if (is_arithmeric_type(node->lhs->type) && is_arithmeric_type(node->rhs->type)) {
+        // 左辺の型のサイズが右辺の型のサイズより大きい場合、右辺の型を左辺の型に合わせる
+        // 本来は左辺の型で、右辺の型を全て表現可能かを調べる必要があるが、現時点ではsigned型しかないので大きさを比較すればよい
+        if (type_size(node->lhs->type) >= type_size(node->rhs->type)) {
+          node->rhs->type = node->lhs->type;
+          return;
+        }
+        // 左辺がchar型、右辺がint型の場合
+        if (node->lhs->type->kind == TYPE_CHAR && node->rhs->type->kind == TYPE_INT) {
+          node->rhs->type = node->lhs->type;
+          return;
+        }
       }
       // 両辺で型が異なる場合はエラーにする
       if (node->lhs->type->kind != node->rhs->type->kind)
