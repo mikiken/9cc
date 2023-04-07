@@ -237,6 +237,7 @@ void gen_epilogue(Function *func) {
 void gen_addr();
 void gen_stmt();
 void gen_expr();
+void gen_binary_operator_expr();
 
 void gen_addr(Node *node) {
   switch (node->kind) {
@@ -404,53 +405,60 @@ void gen_expr(Node *node) {
       push(node->type, RAX); // callした関数の返り値をスタックトップに積む
       return;
     }
+    // それ以外の場合は二項演算子のはず
+    default:
+      gen_binary_operator_expr(node);
+      push(node->type, RAX);
   }
+}
 
+void gen_binary_operator_expr(Node *node) {
+  // 二項演算子の左辺と右辺の式を生成
   gen_expr(node->lhs);
   gen_expr(node->rhs);
-
+  // 二項演算子の両辺の式の値をレジスタにセット
   pop(node->rhs->type, RBX);
   pop(node->lhs->type, RAX);
 
   switch (node->kind) {
     case ND_ADD:
       printf("  add %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      break;
+      return;
     case ND_SUB:
       printf("  sub %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      break;
+      return;
     case ND_MUL:
       printf("  imul %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      break;
+      return;
     case ND_DIV:
       sign_extension(reg_size(node->type));
       printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
-      break;
+      return;
     case ND_MOD:
       sign_extension(reg_size(node->type));
       printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       printf("  mov rax, rdx\n");
-      break;
+      return;
     case ND_EQ:
       printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  sete al\n");
       printf("  movzb rax, al\n");
-      break;
+      return;
     case ND_NE:
       printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setne al\n");
       printf("  movzb rax, al\n");
-      break;
+      return;
     case ND_LT:
       printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setl al\n");
       printf("  movzb rax, al\n");
-      break;
+      return;
     case ND_LE:
       printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
       printf("  setle al\n");
       printf("  movzb rax, al\n");
-      break;
+      return;
     case ND_AND:
       printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
       printf("  setne al\n");
@@ -459,7 +467,7 @@ void gen_expr(Node *node) {
       printf("  setne bl\n");
       printf("  movzb rbx, bl\n");
       printf("  and rax, rbx\n");
-      break;
+      return;
     case ND_OR:
       printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
       printf("  setne al\n");
@@ -468,9 +476,10 @@ void gen_expr(Node *node) {
       printf("  setne bl\n");
       printf("  movzb rbx, bl\n");
       printf("  or rax, rbx\n");
-      break;
+      return;
+    default:
+      error("コード生成を行うことができませんでした");
   }
-  push(node->type, RAX);
 }
 
 void codegen(Function *typed_func_list) {
