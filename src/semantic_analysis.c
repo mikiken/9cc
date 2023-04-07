@@ -99,6 +99,10 @@ bool is_arithmeric_type(Type *type) {
   return type->kind == TYPE_INT || type->kind == TYPE_CHAR;
 }
 
+bool is_array_type(Type *type) {
+  return type->kind == TYPE_ARRAY;
+}
+
 bool is_array_type_node(Node *node) {
   return (node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY;
 }
@@ -306,8 +310,8 @@ void semantic_analysis(Node *node) {
         node->rhs = original_lhs;
         node->type = node->lhs->type;
       }
-      // 左辺がポインタ型、右辺がint型の場合
-      if (is_ptr_type(node->lhs->type) && node->rhs->type->kind == TYPE_INT) {
+      // 左辺がポインタ型または配列型、右辺がint型の場合
+      if ((is_ptr_type(node->lhs->type) || is_array_type(node->lhs->type)) && node->rhs->type->kind == TYPE_INT) {
         // node自体の型は左辺の型に合わせる
         node->type = node->lhs->type;
         Node *size_node = new_size_node(node->lhs->type->ptr_to);
@@ -535,9 +539,11 @@ void semantic_analysis(Node *node) {
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
+#if 0
       // 左辺がポインタ型でない場合はエラーにする
       if (!is_ptr_type(node->lhs->type))
         error("semantic_analysis() : ポインタでないものを間接参照することはできません");
+#endif
       // node自体の型はlhs->type->ptr_toに合わせる
       node->type = node->lhs->type->ptr_to;
       return;
