@@ -405,7 +405,7 @@ void gen_expr_as_lvalue(Node *node) {
       pop(node->rhs->type, RBX);
       pop(node->lhs->type, RAX);
       // 二公園暗視のコードを生成
-      gen_binary_operator_expr(node);
+      gen_binary_operator_expr(RAX, RBX, node);
   }
 }
 
@@ -483,69 +483,71 @@ void gen_expr_as_rvalue(Node *node) {
       // 二項演算子の両辺の式の値をレジスタにセット
       pop(node->rhs->type, RBX);
       pop(node->lhs->type, RAX);
-      // 二公園暗視のコードを生成
-      gen_binary_operator_expr(node);
+      // 二項演算子のコードを生成
+      gen_binary_operator_expr(RAX, RBX, node);
   }
 }
 
-// 現状、この関数が呼び出される前にraxとrbxに式の値がストアされていることを期待する
-void gen_binary_operator_expr(Node *node) {
+// 二項演算子のコードを生成する
+// ND_DIV, ND_MODの場合は、lhs_regはRAXである必要がある
+void gen_binary_operator_expr(int lhs_reg, int rhs_reg, Node *node) {
   switch (node->kind) {
     case ND_ADD:
-      printf("  add %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  add %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
       break;
     case ND_SUB:
-      printf("  sub %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  sub %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
       break;
     case ND_MUL:
-      printf("  imul %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  imul %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
       break;
     case ND_DIV:
       sign_extension(reg_size(node->type));
-      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
+      printf("  idiv %s\n", reg_name(rhs_reg, reg_size(node->type))); // idiv命令は、RDX:RAX (128bit整数) を引数の64bitレジスタの値で割り、商をRAX、余りをRDXにセットする
+
       break;
     case ND_MOD:
       sign_extension(reg_size(node->type));
-      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
+      printf("  idiv %s\n", reg_name(rhs_reg, reg_size(node->type))); // idiv命令は、RDX:RAX (128bit整数) を引数の64bitレジスタの値で割り、商をRAX、余りをRDXにセットする
       printf("  mov rax, rdx\n");
       break;
     case ND_EQ:
-      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      printf("  sete al\n");
-      printf("  movzb rax, al\n");
+      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
+      printf("  sete %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
       break;
     case ND_NE:
-      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      printf("  setne al\n");
-      printf("  movzb rax, al\n");
+      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
+      printf("  setne %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
       break;
     case ND_LT:
-      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      printf("  setl al\n");
-      printf("  movzb rax, al\n");
+      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
+      printf("  setl %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
       break;
     case ND_LE:
-      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
-      printf("  setle al\n");
-      printf("  movzb rax, al\n");
+      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
+      printf("  setle %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
       break;
     case ND_AND:
-      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
-      printf("  setne al\n");
-      printf("  movzb rax, al\n");
-      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
-      printf("  setne bl\n");
-      printf("  movzb rbx, bl\n");
-      printf("  and rax, rbx\n");
+      printf("  cmp %s, 0\n", reg_name(lhs_reg, reg_size(node->lhs->type)));
+      printf("  setne %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
+      printf("  cmp %s, 0\n", reg_name(rhs_reg, reg_size(node->rhs->type)));
+      printf("  setne %s\n", reg_name(rhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(rhs_reg, 8), reg_name(rhs_reg, 1));
+      printf("  and %s, %s\n", reg_name(lhs_reg, 8), reg_name(rhs_reg, 8));
       break;
     case ND_OR:
-      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
-      printf("  setne al\n");
-      printf("  movzb rax, al\n");
-      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
-      printf("  setne bl\n");
-      printf("  movzb rbx, bl\n");
-      printf("  or rax, rbx\n");
+      printf("  cmp %s, 0\n", reg_name(lhs_reg, reg_size(node->lhs->type)));
+      printf("  setne %s\n", reg_name(lhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
+      printf("  cmp %s, 0\n", reg_name(rhs_reg, reg_size(node->rhs->type)));
+      printf("  setne %s\n", reg_name(rhs_reg, 1));
+      printf("  movzb %s, %s\n", reg_name(rhs_reg, 8), reg_name(rhs_reg, 1));
+      printf("  or %s, %s\n", reg_name(lhs_reg, 8), reg_name(rhs_reg, 8));
       break;
     default:
       error("コード生成を行うことができませんでした");
