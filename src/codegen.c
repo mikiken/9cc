@@ -93,8 +93,8 @@ void pop(Type *type, int dest_reg) {
   printf("  pop %s\n", reg_name(dest_reg, 8));
 }
 
-void push_addr(int src_reg) {
-  printf("  push %s\n", reg_name(src_reg, 8)); // アドレスだから8byte
+void push_addr(int dest_reg) {
+  printf("  push %s\n", reg_name(dest_reg, 8)); // アドレスだから8byte
 }
 
 void pop_addr(int dest_reg) {
@@ -175,10 +175,6 @@ void sign_extension(int size) {
   }
 }
 
-bool is_var_node(Node *node) {
-  return node->kind == ND_LVAR || node->kind == ND_GVAR;
-}
-
 void print_string_literal(int str_id, char *str) {
   printf(".LC%d:\n", str_id);
   printf("  .string \"");
@@ -241,8 +237,6 @@ void gen_epilogue(Function *func) {
 void gen_addr();
 void gen_stmt();
 void gen_expr();
-void gen_expr_as_lvalue();
-void gen_expr_as_rvalue();
 void gen_binary_operator_expr();
 
 void gen_addr(Node *node) {
@@ -252,20 +246,16 @@ void gen_addr(Node *node) {
       push_addr(RDI);                                // ローカル変数のアドレスをスタックにpush
       return;
     case ND_GVAR:
-      printf("  lea rdi, %s[rip]\n", node->gvar_name); // アドレスは8byte
-      push_addr(RDI);                                  //グローバル変数のアドレスをスタックにpush
+      printf("  lea rdi, [rip+%s]\n", node->gvar_name); // アドレスは8byte
+      push_addr(RDI);                                   //グローバル変数のアドレスをスタックにpush
       return;
     case ND_STR:
-      printf("  lea rdi, .LC%d[rip]\n", node->str_id);
+      printf("  lea rdi, [rip+.LC%d]\n", node->str_id);
       push_addr(RDI);
       return;
+    // derefが連続しているときは、更にlhsのアドレスを参照する
     case ND_DEREF:
-      gen_expr_as_lvalue(node->lhs);
-      if (is_var_node(node->lhs)) {
-        pop_addr(RAX);
-        mov_memory_to_register(new_type(TYPE_PTR), RDI, RAX);
-        push_addr(RDI);
-      }
+      gen_expr(node->lhs);
       return;
     default:
       error("nodeのアドレスを生成することができません");
@@ -278,7 +268,6 @@ void gen_stmt(Function *func, Node *node) {
     case ND_STMT:
       for (Node *n = node; n; n = n->next) {
         gen_stmt(func, n->body);
-        printf("\n");
       }
       return;
     case ND_RETURN:
@@ -336,80 +325,13 @@ void gen_stmt(Function *func, Node *node) {
     // それ以外の場合はexprのはず
     default:
       gen_expr(node);
-      switch (node->kind) {
-        case ND_LVARDEF:
-        case ND_ADDR:
-        case ND_COND:
-        case ND_COMMA:
-          return;
-        default:
-          pop(node->type, RAX);
-          return;
-      }
+      if (node->kind != ND_LVARDEF && node->kind != ND_ADDR && node->kind != ND_COND && node->kind != ND_COMMA)
+        pop(node->type, RAX);
       return;
   }
 }
 
 void gen_expr(Node *node) {
-  switch (node->kind) {
-    case ND_ASSIGN:
-      gen_expr_as_lvalue(node->lhs);                // 左辺のアドレスをスタックにpush
-      gen_expr(node->rhs);                          // 右辺の値を生成
-      pop(node->type, RAX);                         // 右辺の値をraxにpop
-      pop_addr(RDI);                                // 左辺のアドレスをrdiにpop
-      mov_register_to_memory(node->type, RDI, RAX); // rdiの参照先にraxの値を代入する
-      push(node->type, RAX);                        // rhsが式の値となる
-      return;
-    default:
-      gen_expr_as_rvalue(node);
-      return;
-  }
-}
-
-void gen_expr_as_lvalue(Node *node) {
-  switch (node->kind) {
-    case ND_LVAR:
-    case ND_GVAR:
-      gen_addr(node); // 変数のアドレスをスタックにpush
-      return;
-    case ND_ASSIGN:
-      gen_addr(node->lhs);                          // 左辺のアドレスをスタックにpush
-      gen_expr(node->rhs);                          // 右辺の値を生成
-      pop(node->type, RAX);                         // 右辺の値をraxにpop
-      pop_addr(RDI);                                // 左辺のアドレスをrdiにpop
-      mov_register_to_memory(node->type, RDI, RAX); // rdiの参照先にraxの値を代入する
-      push(node->type, RAX);
-      return;
-    case ND_DEREF:
-      gen_expr_as_lvalue(node->lhs);
-      if (is_var_node(node->lhs)) {
-        pop_addr(RAX);
-        mov_memory_to_register(new_type(TYPE_PTR), RDI, RAX);
-        push_addr(RDI);
-      }
-      return;
-    case ND_ADDR:
-      gen_addr(node->lhs); // lhsのアドレスを生成
-      return;
-    case ND_COMMA:
-      gen_expr(node->lhs);
-      pop(node->lhs->type, RAX); // スタックにpushされた左辺値は不要なので捨てる (こうしないと引数に直接カンマ演算子を書いたときにバグる)
-      gen_expr(node->rhs);
-      return;
-    // それ以外の場合は二項演算子のはず
-    default:
-      // 二項演算子の左辺と右辺の式を生成
-      gen_expr(node->lhs);
-      gen_expr(node->rhs);
-      // 二項演算子の両辺の式の値をレジスタにセット
-      pop(node->rhs->type, RBX);
-      pop(node->lhs->type, RAX);
-      // 二公園暗視のコードを生成
-      gen_binary_operator_expr(RAX, RBX, node);
-  }
-}
-
-void gen_expr_as_rvalue(Node *node) {
   switch (node->kind) {
     case ND_NUM:
       push_immediate_value(node->val);
@@ -422,6 +344,14 @@ void gen_expr_as_rvalue(Node *node) {
       pop_addr(RDI);                                // rdiに変数のアドレスをセット
       mov_memory_to_register(node->type, RAX, RDI); // rdiの参照先の値をraxに代入する
       push(node->type, RAX);                        // raxの値をスタックにpush
+      return;
+    case ND_ASSIGN:
+      gen_addr(node->lhs);                          // 左辺のアドレスをスタックにpush
+      gen_expr(node->rhs);                          // 右辺の値を生成
+      pop(node->type, RAX);                         // 右辺の値をraxにpop
+      pop_addr(RDI);                                // 左辺のアドレスをrdiにpop
+      mov_register_to_memory(node->type, RDI, RAX); // rdiの参照先にraxの値を代入する
+      push(node->type, RAX);
       return;
     case ND_DEREF:
       gen_expr(node->lhs);
@@ -477,82 +407,79 @@ void gen_expr_as_rvalue(Node *node) {
     }
     // それ以外の場合は二項演算子のはず
     default:
-      // 二項演算子の左辺と右辺の式を生成
-      gen_expr(node->lhs);
-      gen_expr(node->rhs);
-      // 二項演算子の両辺の式の値をレジスタにセット
-      pop(node->rhs->type, RBX);
-      pop(node->lhs->type, RAX);
-      // 二項演算子のコードを生成
-      gen_binary_operator_expr(RAX, RBX, node);
+      gen_binary_operator_expr(node);
+      push(node->type, RAX);
   }
 }
 
-// 二項演算子のコードを生成する
-// ND_DIV, ND_MODの場合は、lhs_regはRAXである必要がある
-void gen_binary_operator_expr(int lhs_reg, int rhs_reg, Node *node) {
+void gen_binary_operator_expr(Node *node) {
+  // 二項演算子の左辺と右辺の式を生成
+  gen_expr(node->lhs);
+  gen_expr(node->rhs);
+  // 二項演算子の両辺の式の値をレジスタにセット
+  pop(node->rhs->type, RBX);
+  pop(node->lhs->type, RAX);
+
   switch (node->kind) {
     case ND_ADD:
-      printf("  add %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      break;
+      printf("  add %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      return;
     case ND_SUB:
-      printf("  sub %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      break;
+      printf("  sub %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      return;
     case ND_MUL:
-      printf("  imul %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      break;
+      printf("  imul %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      return;
     case ND_DIV:
       sign_extension(reg_size(node->type));
-      printf("  idiv %s\n", reg_name(rhs_reg, reg_size(node->type))); // idiv命令は、RDX:RAX (128bit整数) を引数の64bitレジスタの値で割り、商をRAX、余りをRDXにセットする
-
-      break;
+      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
+      return;
     case ND_MOD:
       sign_extension(reg_size(node->type));
-      printf("  idiv %s\n", reg_name(rhs_reg, reg_size(node->type))); // idiv命令は、RDX:RAX (128bit整数) を引数の64bitレジスタの値で割り、商をRAX、余りをRDXにセットする
+      printf("  idiv %s\n", reg_name(RBX, reg_size(node->type)));
       printf("  mov rax, rdx\n");
-      break;
+      return;
     case ND_EQ:
-      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      printf("  sete %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      break;
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  sete al\n");
+      printf("  movzb rax, al\n");
+      return;
     case ND_NE:
-      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      printf("  setne %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      break;
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      return;
     case ND_LT:
-      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      printf("  setl %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      break;
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  setl al\n");
+      printf("  movzb rax, al\n");
+      return;
     case ND_LE:
-      printf("  cmp %s, %s\n", reg_name(lhs_reg, reg_size(node->type)), reg_name(rhs_reg, reg_size(node->type)));
-      printf("  setle %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      break;
+      printf("  cmp %s, %s\n", reg_name(RAX, reg_size(node->type)), reg_name(RBX, reg_size(node->type)));
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      return;
     case ND_AND:
-      printf("  cmp %s, 0\n", reg_name(lhs_reg, reg_size(node->lhs->type)));
-      printf("  setne %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      printf("  cmp %s, 0\n", reg_name(rhs_reg, reg_size(node->rhs->type)));
-      printf("  setne %s\n", reg_name(rhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(rhs_reg, 8), reg_name(rhs_reg, 1));
-      printf("  and %s, %s\n", reg_name(lhs_reg, 8), reg_name(rhs_reg, 8));
-      break;
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
+      printf("  setne bl\n");
+      printf("  movzb rbx, bl\n");
+      printf("  and rax, rbx\n");
+      return;
     case ND_OR:
-      printf("  cmp %s, 0\n", reg_name(lhs_reg, reg_size(node->lhs->type)));
-      printf("  setne %s\n", reg_name(lhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(lhs_reg, 8), reg_name(lhs_reg, 1));
-      printf("  cmp %s, 0\n", reg_name(rhs_reg, reg_size(node->rhs->type)));
-      printf("  setne %s\n", reg_name(rhs_reg, 1));
-      printf("  movzb %s, %s\n", reg_name(rhs_reg, 8), reg_name(rhs_reg, 1));
-      printf("  or %s, %s\n", reg_name(lhs_reg, 8), reg_name(rhs_reg, 8));
-      break;
+      printf("  cmp %s, 0\n", reg_name(RAX, reg_size(node->lhs->type)));
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      printf("  cmp %s, 0\n", reg_name(RBX, reg_size(node->rhs->type)));
+      printf("  setne bl\n");
+      printf("  movzb rbx, bl\n");
+      printf("  or rax, rbx\n");
+      return;
     default:
       error("コード生成を行うことができませんでした");
   }
-  push(node->type, RAX);
 }
 
 void codegen(Function *typed_func_list) {
