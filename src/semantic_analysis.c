@@ -91,7 +91,6 @@ Node *cast_array_to_pointer(Node *array_node) {
   Node *ref_to_array = new_node(ND_ADDR);
   Type *ty_addr = new_type(TYPE_PTR);
   ty_addr->ptr_to = array_node->type->ptr_to; // 配列の型はptr_toに入っている
-  ty_addr->array_size = array_node->type->array_size;
   return new_typed_binary(new_typed_node(ty_addr, ref_to_array), array_node, NULL);
 }
 
@@ -104,7 +103,7 @@ bool is_array_type(Type *type) {
 }
 
 bool is_array_type_node(Node *node) {
-  return (node->kind == ND_LVAR || node->kind == ND_GVAR) && node->type->kind == TYPE_ARRAY;
+  return node->type->kind == TYPE_ARRAY;
 }
 
 bool is_ptr_type(Type *type) {
@@ -539,11 +538,9 @@ void semantic_analysis(Node *node) {
       // 左辺が配列の場合はポインタにキャストする
       if (is_array_type_node(node->lhs))
         node->lhs = cast_array_to_pointer(node->lhs);
-#if 0
       // 左辺がポインタ型でない場合はエラーにする
       if (!is_ptr_type(node->lhs->type))
         error("semantic_analysis() : ポインタでないものを間接参照することはできません");
-#endif
       // node自体の型はlhs->type->ptr_toに合わせる
       node->type = node->lhs->type->ptr_to;
       return;

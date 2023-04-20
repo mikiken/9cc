@@ -37,7 +37,7 @@ $ make test
 - pointer add and sub
 - `sizeof` operator
 - one-dimensional array
-
+- multi-dimensional array
 
 # BNF
 ```
