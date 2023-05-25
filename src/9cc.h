@@ -9,40 +9,6 @@
 #define SIZE_PTR 8
 #define SIZE_CHAR 1
 
-// 型の種類
-typedef enum {
-  TYPE_NULL,
-  TYPE_INT,   // int
-  TYPE_CHAR,  // char
-  TYPE_VOID,  // void
-  TYPE_PTR,   // pointer to ...
-  TYPE_ARRAY, // 配列型
-} TypeKind;
-
-typedef struct Type Type;
-
-struct Type {
-  TypeKind kind;  // 型の種類
-  Type *ptr_to;   // kind == TYPE_PTR || TYPE_ARRAY のとき使用
-  int array_size; // 配列の要素数
-};
-
-typedef struct Obj Obj;
-
-struct Obj {
-  Obj *next;  // 次のオブジェクトまたはNULL
-  Type *type; // 型
-  int len;    // 識別子または文字列リテラルの文字数
-
-  // 変数
-  char *name; // 変数の名前
-  int offset; // RBPからのオフセット(ローカル変数のときのみ使用)
-
-  // 文字列リテラル
-  char *init_data;
-  int str_id;
-};
-
 // トークンの種類
 typedef enum {
   TK_EQUAL,             // ==
@@ -103,6 +69,47 @@ struct Token {
   char *start;    // トークン文字列の開始位置
   char *end;      // トークン文字列の終了位置
   int len;        // トークンの長さ
+};
+
+// 型の種類
+typedef enum {
+  TYPE_NULL,
+  TYPE_INT,   // int
+  TYPE_CHAR,  // char
+  TYPE_VOID,  // void
+  TYPE_PTR,   // pointer to ...
+  TYPE_ARRAY, // 配列型
+  TYPE_FUNC,  // 関数型
+} TypeKind;
+
+typedef struct Type Type;
+typedef struct Obj Obj;
+
+struct Type {
+  TypeKind kind; // 型の種類
+  Token *ident;  // 変数や関数の名前
+
+  // 変数
+  Type *ptr_to;   // 配列またはポインタ型で使用
+  int array_size; // 配列の要素数
+
+  // 関数型
+  Type *return_type; //戻り値の型
+  Obj *params_list;  // 関数の引数リスト
+};
+
+struct Obj {
+  Obj *next;  // 次のオブジェクトまたはNULL
+  Type *type; // 型
+  int len;    // 識別子または文字列リテラルの文字数
+
+  // 変数
+  char *name; // 変数の名前
+  int offset; // RBPからのオフセット(ローカル変数のときのみ使用)
+
+  // 文字列リテラル
+  char *init_data;
+  int str_id;
 };
 
 // 抽象構文木のノードの種類
@@ -180,11 +187,11 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
-  Type *type;      // 型
-  char *name;      // 関数名
-  Obj params_head; // 引数リストの先頭
-  Node *body;      // statement
-  Obj *lvar_list;  // ローカル変数のリスト
+  Type *return_type; // 型
+  char *name;        // 関数名
+  Obj *params_list;  // 引数リスト
+  Node *body;        // statement
+  Obj *lvar_list;    // ローカル変数のリスト
 };
 
 // 入力プログラムの名前

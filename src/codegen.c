@@ -220,9 +220,8 @@ void gen_prologue(Function *func) {
   push_addr(RBP);             // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
-  int offset = func->lvar_list->offset;
-  if (offset) {
-    offset = (offset / 16 + 1) * 16;
+  if (func->lvar_list) {
+    int offset = (func->lvar_list->offset / 16 + 1) * 16;
     printf("  sub rsp, %d\n", offset);
   }
 }
@@ -402,7 +401,7 @@ void gen_expr(Node *node) {
         pop(&arg_type[i - 1], arg_reg_kind(i));
       printf("  mov al, 0\n"); // printfは可変長引数を取るので、関数呼び出し前に浮動小数点数の引数の個数をalにセットする必要がある
       printf("  call %s\n", node->func_name);
-      push(node->type, RAX); // callした関数の返り値をスタックトップに積む
+      push(node->type, RAX);   // callした関数の返り値をスタックトップに積む
       return;
     }
     // それ以外の場合は二項演算子のはず
@@ -493,7 +492,7 @@ void codegen(Function *typed_func_list) {
     printf("%s:\n", f->name);
     gen_prologue(f);
     int arg_count = 0;
-    for (Obj *param = f->params_head.next; param; param = param->next) {
+    for (Obj *param = f->params_list; param; param = param->next) {
       pass_argument_to_register(param, ++arg_count);
     }
     gen_stmt(f, f->body);
