@@ -21,10 +21,15 @@ donut: 9cc
 				cc -g -O0 -o tmp tmp.s
 				./tmp
 
+life_game: 9cc
+				./9cc ./sample/life_game.c > tmp.s
+				cc -g -O0 -o tmp tmp.s
+				./tmp
+
 # cleanに対するルールを設定
 clean:
 				rm -f 9cc .gdb_history tmp* src/*.o test/*.s
 				find ./ -name "peda-session-*.txt" -exec rm {} \;
 
 # testとcleanをダミーターゲット(実際に存在しないファイル)に指定
-.PHONY: test clean donut
+.PHONY: test clean donut life_game
