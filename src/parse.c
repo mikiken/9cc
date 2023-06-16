@@ -91,28 +91,6 @@ void skip_token_to(Token *tok, TokenKind kind) {
   }
 }
 
-bool is_func_declaration(Token *tok) {
-  int count = 0;
-  while (true) {
-    if (consume_nostep(tok, TK_SEMICOLON) || consume_nostep(tok, TK_EOF))
-      error_at(tok->start, "引数の括弧が閉じていません");
-
-    // 現状、関数宣言の引数の型チェックは行っていない
-    // 関数ポインタが引数に来ても大丈夫なように、括弧の数が対応しているかのみチェックする
-    if (consume_nostep(tok, TK_LEFT_PARENTHESIS))
-      count++;
-    if (consume_nostep(tok, TK_RIGHT_PARENTHESIS)) {
-      if (consume_nostep(tok->next, TK_SEMICOLON) && !count)
-        return true;
-      if (consume_nostep(tok->next, TK_LEFT_BRACE) && !count)
-        return false;
-      else
-        count--;
-    }
-    tok = tok->next;
-  }
-}
-
 Obj *find_var(Obj *var_list, Token *var_name) {
   for (Obj *v = var_list; v != NULL; v = v->next)
     if (v->len == var_name->len && !memcmp(var_name->start, v->name, v->len))
