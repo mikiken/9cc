@@ -209,50 +209,34 @@ Type *parse_pointer_type(Type *base_type, Token *tok) {
   return base_type;
 }
 
-Type *parse_nested_type(Type *pointed_type, Token *tok) {
-  Type *pointer_type = parse_pointer_type(pointed_type, tok);
+Type *parse_nested_type(Type *pointer_type, Token *tok) {
   if (!pointer_type)
     return NULL;
+  Type *inner_type = new_type(TYPE_NULL); // 配列型・関数型の場合はディープコピーにより内容が更新される
+  *inner_type = *pointer_type;
+
   // ネストした型の場合
   if (consume(tok, TK_LEFT_PARENTHESIS)) {
     // ()の中の型をパース
-    Type *outer_type = parse_nested_type(pointed_type, tok);
+    Type *outer_pointer_type = parse_pointer_type(inner_type, tok);
+    Type *outer_type = parse_nested_type(outer_pointer_type, tok);
     expect(tok, TK_RIGHT_PARENTHESIS);
 
-    Type *suffix_type = parse_suffix_type(pointer_type, tok);
-    // 関数型の場合
-    if (suffix_type->kind == TYPE_FUNC) {
-      Type *func_type = new_type(TYPE_FUNC);
-      func_type->return_type = pointer_type;
-      func_type->params_list = suffix_type->params_list;
-      *pointed_type = *func_type;
-    }
-    // 配列型の場合
-    else if (suffix_type->kind == TYPE_ARRAY) {
-      Type *array_type = new_type(TYPE_ARRAY);
-      array_type->ptr_to = pointer_type;
-      array_type->array_size = suffix_type->array_size;
-      *pointed_type = *array_type;
-    }
-    // 通常の変数の場合
-    else {
-      Type *variable_type = new_type(pointer_type->kind);
-      // ポインタ型の変数の場合
-      if (pointer_type->ptr_to)
-        variable_type->ptr_to = pointer_type->ptr_to;
-      *pointed_type = *variable_type;
-    }
-    outer_type->ptr_to = pointed_type;
+    Type *suffix_type = parse_suffix_type(inner_type, tok);
+    // 配列型・関数型の場合
+    if (suffix_type)
+      *inner_type = *suffix_type;
     return outer_type;
   }
   // 識別子のレベルをパース
-  else
-    return parse_outermost_type(pointed_type, tok);
+  else {
+    Type *outermost_pointer_type = parse_pointer_type(inner_type, tok);
+    return parse_outermost_type(outermost_pointer_type, tok);
+  }
 }
 
 // 識別子のレベル(型の図において最も外側の型)をパース
-Type *parse_outermost_type(Type *pointed_type, Token *tok) {
-  Type *pointer_type = parse_pointer_type(pointed_type, tok);
+Type *parse_outermost_type(Type *pointer_type, Token *tok) {
   // 識別子がある場合
   if (consume_nostep(tok, TK_IDENT)) {
     // 識別子を記録
@@ -261,17 +245,16 @@ Type *parse_outermost_type(Type *pointed_type, Token *tok) {
     next_token(tok); // 識別子を読み飛ばす
 
     Type *suffix_type = parse_suffix_type(pointer_type, tok);
+    // 配列型・関数型の場合
     if (suffix_type) {
       suffix_type->ident = ident;
       return suffix_type;
     }
     // 通常の変数の場合
-    Type *variable_type = new_type(pointer_type->kind);
-    variable_type->ident = ident; // 変数名
-    // ポインタ型の変数の場合
-    if (pointer_type->ptr_to)
-      variable_type->ptr_to = pointer_type->ptr_to;
-    return variable_type;
+    else {
+      pointer_type->ident = ident;
+      return pointer_type;
+    }
   }
   // 関数の引数が (void)である場合
   else if (pointer_type->kind == TYPE_VOID) {
@@ -280,10 +263,12 @@ Type *parse_outermost_type(Type *pointed_type, Token *tok) {
 }
 
 Type *parse_suffix_type(Type *pointer_type, Token *tok) {
+  Type *prefix_type = new_type(TYPE_NULL);
+  *prefix_type = *pointer_type;
   //関数型の場合
   if (consume(tok, TK_LEFT_PARENTHESIS)) {
     Type *func_type = new_type(TYPE_FUNC);
-    func_type->return_type = pointer_type;
+    func_type->return_type = prefix_type;
     func_type->params_list = parse_parameter(tok);
     return func_type;
   }
@@ -302,7 +287,7 @@ Type *parse_suffix_type(Type *pointer_type, Token *tok) {
         expect(tok, TK_RIGHT_BRACKET);
       }
     }
-    cur->ptr_to = pointer_type;
+    cur->ptr_to = prefix_type;
     return head.ptr_to;
   }
   // 通常の変数の場合
