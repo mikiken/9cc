@@ -75,16 +75,30 @@ struct Token {
 // 型の種類
 typedef enum {
   TYPE_NULL,
-  TYPE_INT,   // int
-  TYPE_CHAR,  // char
-  TYPE_VOID,  // void
-  TYPE_PTR,   // pointer to ...
-  TYPE_ARRAY, // 配列型
-  TYPE_FUNC,  // 関数型
+  TYPE_INT,    // int
+  TYPE_CHAR,   // char
+  TYPE_VOID,   // void
+  TYPE_PTR,    // pointer to ...
+  TYPE_ARRAY,  // 配列型
+  TYPE_FUNC,   // 関数型
+  TYPE_STRUCT, // 構造体
 } TypeKind;
 
 typedef struct Type Type;
 typedef struct Obj Obj;
+
+typedef struct StructDef StructDef;
+typedef struct Member Member;
+
+struct Member {
+  Member *next;
+  Type *type;
+};
+
+struct StructDef {
+  Token *tag;
+  Member members;
+};
 
 struct Type {
   TypeKind kind; // 型の種類
@@ -97,6 +111,9 @@ struct Type {
   // 関数型
   Type *return_type; //戻り値の型
   Obj *params_list;  // 関数の引数リスト
+
+  // 構造体型
+  StructDef *struct_def;
 };
 
 struct Obj {
