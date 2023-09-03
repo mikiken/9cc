@@ -96,6 +96,7 @@ struct Member {
 };
 
 struct StructDef {
+  StructDef *next;
   Token *tag;
   Member members;
 };
