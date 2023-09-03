@@ -98,7 +98,7 @@ struct Member {
 struct StructDef {
   StructDef *next;
   Token *tag;
-  Member members;
+  Member *members;
 };
 
 struct Type {
@@ -206,11 +206,12 @@ typedef struct Function Function;
 
 struct Function {
   Function *next;
-  Type *return_type; // 型
-  char *name;        // 関数名
-  Obj *params_list;  // 引数リスト
-  Node *body;        // statement
-  Obj *lvar_list;    // ローカル変数のリスト
+  Type *return_type;        // 型
+  char *name;               // 関数名
+  Obj *params_list;         // 引数リスト
+  Node *body;               // statement
+  Obj *lvar_list;           // ローカル変数のリスト
+  StructDef structdef_list; // 構造体定義のリスト
 };
 
 // 入力プログラムの名前

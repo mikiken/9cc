@@ -432,6 +432,17 @@ Function *new_func_definition(Type *func_type) {
   return func;
 }
 
+// トップレベルに書かれた構造体定義を管理するリスト
+StructDef *structdef_list;
+
+StructDef *find_structdef(StructDef *def_list, Token *tok) {
+  for (StructDef *d = def_list; d; d = d->next) {
+    if (memcmp(d->tag->start, tok->start, tok->len) == 0)
+      return d;
+  }
+  return NULL;
+}
+
 bool is_eof(Token *tok) {
   return tok->kind == TK_EOF;
 }
