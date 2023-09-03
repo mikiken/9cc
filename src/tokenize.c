@@ -356,6 +356,12 @@ Token *tokenize(char *user_input) {
       continue;
     }
 
+    if (is_keyword(p, "struct")) {
+      cur = new_token(TK_STRUCT, cur, p, p + 5);
+      p += 6;
+      continue;
+    }
+
     // 識別子の場合
     if (is_ident_first(*p)) {
       char *start = p;

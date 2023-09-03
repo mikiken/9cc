@@ -58,6 +58,7 @@ typedef enum {
   TK_CHAR,              // char
   TK_VOID,              // void
   TK_SIZEOF,            // sizeof
+  TK_STRUCT,            // struct
 } TokenKind;
 
 typedef struct Token Token;
