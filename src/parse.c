@@ -183,8 +183,9 @@ Type *parse_outermost_type();
 Type *parse_suffix_type();
 Type *parse_declaration_type();
 Obj *parse_parameter();
+StructDef *parse_struct_type();
 
-Type *parse_base_type(Token *tok) {
+Type *parse_base_type(StructDef *def_list, Token *tok) {
   Type *type = calloc(1, sizeof(Type));
   if (consume(tok, TK_INT))
     type->kind = TYPE_INT;
@@ -192,6 +193,21 @@ Type *parse_base_type(Token *tok) {
     type->kind = TYPE_CHAR;
   else if (consume(tok, TK_VOID))
     type->kind = TYPE_VOID;
+  else if (consume(tok, TK_STRUCT)) {
+    type->kind = TYPE_STRUCT;
+    expect_nostep(tok, TK_IDENT);
+    StructDef *structdef = find_structdef(def_list, tok);
+    // 構造体定義の場合
+    if (!structdef)
+      structdef = parse_struct_type(def_list, tok);
+    // 構造体変数の場合
+    else {
+      next_token(tok);
+      if (consume(tok, TK_LEFT_BRACE))
+        error_at(tok->start, "定義済みの構造体を再定義することはできません");
+    }
+    type->struct_def = structdef;
+  }
   else
     return NULL;
   return type;
@@ -295,8 +311,8 @@ Type *parse_suffix_type(Type *pointer_type, Token *tok) {
     return NULL;
 }
 
-Type *parse_declaration_type(Token *tok) {
-  return parse_nested_type(parse_pointer_type(parse_base_type(tok), tok), tok);
+Type *parse_declaration_type(StructDef *def_list, Token *tok) {
+  return parse_nested_type(parse_pointer_type(parse_base_type(def_list, tok), tok), tok);
 }
 
 void init_func_declaration() {
@@ -380,7 +396,7 @@ Obj *init_params_head() {
 }
 
 Obj *parse_parameter(Token *tok) {
-  Type *type = parse_declaration_type(tok);
+  Type *type = parse_declaration_type(NULL, tok);
   // () の場合
   if (!type) {
     expect(tok, TK_RIGHT_PARENTHESIS);
@@ -395,7 +411,7 @@ Obj *parse_parameter(Token *tok) {
   else {
     Obj *params_head = init_params_head();
     Obj *cur_param = params_head;
-    for (bool is_last = false; !is_last; is_last = !consume(tok, TK_COMMA), type = parse_declaration_type(tok)) {
+    for (bool is_last = false; !is_last; is_last = !consume(tok, TK_COMMA), type = parse_declaration_type(NULL, tok)) {
       Obj *new_param = calloc(1, sizeof(Obj));
       new_param->type = type;
       new_param->name = calloc(type->ident->len + 1, sizeof(char));
@@ -408,6 +424,24 @@ Obj *parse_parameter(Token *tok) {
     expect(tok, TK_RIGHT_PARENTHESIS);
     return params_head->next;
   }
+}
+
+StructDef *parse_struct_type(StructDef *def_list, Token *tok) {
+  StructDef *new_struct_def = calloc(1, sizeof(StructDef));
+  new_struct_def->tag = calloc(1, sizeof(Token));
+  *new_struct_def->tag = *tok;
+  next_token(tok);
+  Member head;
+  Member *m = &head;
+  expect(tok, TK_LEFT_BRACE);
+  while (!consume(tok, TK_RIGHT_BRACE)) {
+    m = m->next = calloc(1, sizeof(Member));
+    m->type = parse_declaration_type(def_list, tok);
+    expect(tok, TK_SEMICOLON);
+  }
+  expect(tok, TK_SEMICOLON);
+  new_struct_def->members = head.next;
+  return new_struct_def;
 }
 
 void new_func_declaration(Type *func_type) {
@@ -436,7 +470,9 @@ Function *new_func_definition(Type *func_type) {
 StructDef *structdef_list;
 
 StructDef *find_structdef(StructDef *def_list, Token *tok) {
-  for (StructDef *d = def_list; d; d = d->next) {
+  if (!def_list->next)
+    return NULL;
+  for (StructDef *d = def_list->next; d; d = d->next) {
     if (memcmp(d->tag->start, tok->start, tok->len) == 0)
       return d;
   }
@@ -476,7 +512,7 @@ Function *program(Token *tok) {
   Function *cur_func = func_head;
 
   while (!is_eof(tok)) {
-    Type *declaration_type = parse_declaration_type(tok);
+    Type *declaration_type = parse_declaration_type(structdef_list, tok);
 
     if (declaration_type->kind == TYPE_FUNC) {
       // 関数定義の場合
@@ -506,11 +542,18 @@ Node *block_stmt(Function *func, Token *tok) {
   Node *cur = &head;
   while (!consume(tok, TK_RIGHT_BRACE)) {
     cur = cur->next = new_node(ND_STMT);
-    Type *lvar_declaration_type = parse_declaration_type(tok);
-    // ローカル変数の宣言の場合
-    if (lvar_declaration_type) {
-      cur->body = declaration(func, lvar_declaration_type, tok);
-      expect(tok, TK_SEMICOLON);
+    Type *base_declaration_type = parse_base_type(&func->structdef_list, tok);
+    if (base_declaration_type) {
+      if (base_declaration_type->kind == TYPE_STRUCT) {
+        cur->body = NULL;
+        continue;
+      }
+      Type *lvar_declaration_type = parse_nested_type(parse_pointer_type(base_declaration_type, tok), tok);
+      // ローカル変数の宣言の場合
+      if (lvar_declaration_type) {
+        cur->body = declaration(func, lvar_declaration_type, tok);
+        expect(tok, TK_SEMICOLON);
+      }
     }
     else
       cur->body = stmt(func, tok);
@@ -598,6 +641,9 @@ Node *declaration(Function *func, Type *dec_type, Token *tok) {
       }
     }
   }
+  else if (dec_type->kind == TYPE_STRUCT) {
+    return NULL;
+  }
   // 通常の変数の場合
   else {
     node = new_lvar_definition(func, dec_type);
@@ -647,7 +693,7 @@ Node *stmt(Function *func, Token *tok) {
     node = new_node(ND_FOR);
     expect(tok, TK_LEFT_PARENTHESIS);
     if (!consume_nostep(tok, TK_SEMICOLON)) {
-      Type *declaration_base_type = parse_base_type(tok);
+      Type *declaration_base_type = parse_base_type(&func->structdef_list, tok);
       // カウンタ変数の宣言がある場合
       if (declaration_base_type) {
         Type *declaration_type = parse_nested_type(parse_pointer_type(declaration_base_type, tok), tok);

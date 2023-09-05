@@ -232,6 +232,7 @@ void unexpected_symbol_error(char *loc, TokenKind kind);
 Node *new_node(NodeKind kind);
 Type *new_type(TypeKind kind);
 int type_size(Type *type);
+StructDef *find_structdef(StructDef *def_list, Token *tok);
 
 char *read_file(char *path);
 Function *parse(Token *tok);
