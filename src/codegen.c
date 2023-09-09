@@ -220,7 +220,7 @@ void gen_prologue(Function *func) {
   push_addr(RBP);             // 呼び出し前の関数のベースポインタをスタックにpushしておく
   printf("  mov rbp, rsp\n"); // ベースポインタをスタックトップに移動
   // ローカル変数のスタック領域を確保する
-  if (func->lvar_list) {
+  if (func->lvar_list->offset) {
     int offset = (func->lvar_list->offset / 16 + 1) * 16;
     printf("  sub rsp, %d\n", offset);
   }
