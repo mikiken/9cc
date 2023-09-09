@@ -545,7 +545,8 @@ Node *block_stmt(Function *func, Token *tok) {
     Type *base_declaration_type = parse_base_type(&func->structdef_list, tok);
     if (base_declaration_type) {
       if (base_declaration_type->kind == TYPE_STRUCT) {
-        cur->body = NULL;
+        cur->body = new_node(ND_STRUCTDEF);
+        cur->body->type = base_declaration_type;
         continue;
       }
       Type *lvar_declaration_type = parse_nested_type(parse_pointer_type(base_declaration_type, tok), tok);

@@ -135,33 +135,34 @@ struct Obj {
 typedef enum {
   ND_STMT,
   ND_EXPR,
-  ND_COMMA,   // ,
-  ND_ADD,     // +
-  ND_SUB,     // -
-  ND_MUL,     // *
-  ND_DIV,     // /
-  ND_MOD,     // %
-  ND_EQ,      // ==
-  ND_NE,      // !=
-  ND_LT,      // <
-  ND_LE,      // <=
-  ND_NOT,     // !
-  ND_AND,     // &&
-  ND_OR,      // ||
-  ND_COND,    // ?: (conditional operator)
-  ND_ASSIGN,  // =
-  ND_NUM,     // 整数
-  ND_STR,     // 文字列リテラル
-  ND_LVARDEF, // ローカル変数の定義
-  ND_LVAR,    // ローカル変数
-  ND_GVAR,    // グローバル変数
-  ND_RETURN,  // return
-  ND_IF,      // if
-  ND_FOR,     // for | while
-  ND_FUNCALL, // function call
-  ND_ADDR,    // &
-  ND_DEREF,   // *(参照)
-  ND_SIZEOF,  // sizeof 意味解析でND_NUMに置き換えられる
+  ND_COMMA,     // ,
+  ND_ADD,       // +
+  ND_SUB,       // -
+  ND_MUL,       // *
+  ND_DIV,       // /
+  ND_MOD,       // %
+  ND_EQ,        // ==
+  ND_NE,        // !=
+  ND_LT,        // <
+  ND_LE,        // <=
+  ND_NOT,       // !
+  ND_AND,       // &&
+  ND_OR,        // ||
+  ND_COND,      // ?: (conditional operator)
+  ND_ASSIGN,    // =
+  ND_NUM,       // 整数
+  ND_STR,       // 文字列リテラル
+  ND_LVARDEF,   // ローカル変数の定義
+  ND_LVAR,      // ローカル変数
+  ND_GVAR,      // グローバル変数
+  ND_RETURN,    // return
+  ND_IF,        // if
+  ND_FOR,       // for | while
+  ND_FUNCALL,   // function call
+  ND_ADDR,      // &
+  ND_DEREF,     // *(参照)
+  ND_SIZEOF,    // sizeof 意味解析でND_NUMに置き換えられる
+  ND_STRUCTDEF, // 構造体定義
 } NodeKind;
 
 typedef struct Node Node;

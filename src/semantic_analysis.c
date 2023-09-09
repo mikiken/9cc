@@ -259,6 +259,8 @@ Node *add_type_to_node(Function *function, Node *node) {
           size_node->val = SIZE_CHAR * (find_str_by_id(lhs->lhs->str_id)->len + 1); //　文字列+\0の文字数
       return size_node;
     }
+    case ND_STRUCTDEF:
+      return node; // 定義時に型情報が付与されているので、そのままnodeを返す
     default:
       error("add_type_to_node() : nodeに型を付与することができませんでした");
   }
@@ -272,6 +274,7 @@ void semantic_analysis(Node *node) {
     case ND_LVAR:
     case ND_GVAR:
     case ND_SIZEOF:
+    case ND_STRUCTDEF:
       return;
     case ND_STMT:
     case ND_EXPR:

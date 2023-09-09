@@ -324,7 +324,7 @@ void gen_stmt(Function *func, Node *node) {
     // それ以外の場合はexprのはず
     default:
       gen_expr(node);
-      if (node->kind != ND_LVARDEF && node->kind != ND_ADDR && node->kind != ND_COND && node->kind != ND_COMMA)
+      if (node->kind != ND_LVARDEF && node->kind != ND_STRUCTDEF && node->kind != ND_ADDR && node->kind != ND_COND && node->kind != ND_COMMA)
         pop(node->type, RAX);
       return;
   }
@@ -336,6 +336,7 @@ void gen_expr(Node *node) {
       push_immediate_value(node->val);
       return;
     case ND_LVARDEF:
+    case ND_STRUCTDEF:
       return;
     case ND_LVAR:
     case ND_GVAR:
@@ -401,7 +402,7 @@ void gen_expr(Node *node) {
         pop(&arg_type[i - 1], arg_reg_kind(i));
       printf("  mov al, 0\n"); // printfは可変長引数を取るので、関数呼び出し前に浮動小数点数の引数の個数をalにセットする必要がある
       printf("  call %s\n", node->func_name);
-      push(node->type, RAX);   // callした関数の返り値をスタックトップに積む
+      push(node->type, RAX); // callした関数の返り値をスタックトップに積む
       return;
     }
     // それ以外の場合は二項演算子のはず
