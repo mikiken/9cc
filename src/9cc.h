@@ -93,6 +93,7 @@ typedef struct Member Member;
 struct Member {
   Member *next;
   Type *type;
+  int offset;
 };
 
 struct StructDef {

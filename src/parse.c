@@ -434,9 +434,12 @@ StructDef *parse_struct_type(StructDef *def_list, Token *tok) {
   Member head;
   Member *m = &head;
   expect(tok, TK_LEFT_BRACE);
+  int member_last_offset = 0;
   while (!consume(tok, TK_RIGHT_BRACE)) {
     m = m->next = calloc(1, sizeof(Member));
     m->type = parse_declaration_type(def_list, tok);
+    member_last_offset = calc_lvar_offset(member_last_offset, m->type);
+    m->offset = member_last_offset;
     expect(tok, TK_SEMICOLON);
   }
   expect(tok, TK_SEMICOLON);
