@@ -130,6 +130,12 @@ int calc_lvar_offset(int last_lvar_offset, Type *new_lvar_type) {
       return lvar_offset(last_lvar_offset, SIZE_PTR);
     case TYPE_ARRAY:
       return lvar_offset(last_lvar_offset, type_size(new_lvar_type->ptr_to)) + type_size(new_lvar_type->ptr_to) * (new_lvar_type->array_size - 1);
+    case TYPE_STRUCT: {
+      int struct_size;
+      for (Member *m = new_lvar_type->struct_def->members->next; m; m = m->next)
+        struct_size = m->offset;
+      return lvar_offset(last_lvar_offset, struct_size);
+    }
     default:
       error("未対応の型です");
   }
@@ -275,10 +281,16 @@ Type *parse_outermost_type(Type *pointer_type, Token *tok) {
       return pointer_type;
     }
   }
+  // 構造体定義の場合
+  else if (pointer_type->kind == TYPE_STRUCT && consume(tok, TK_SEMICOLON)) {
+    return pointer_type;
+  }
   // 関数の引数が (void)である場合
   else if (pointer_type->kind == TYPE_VOID) {
     return NULL;
   }
+  else
+    error_at(tok->start, "parse_outermost_type(): 型をパースすることができませんでした");
 }
 
 Type *parse_suffix_type(Type *pointer_type, Token *tok) {
@@ -445,7 +457,6 @@ StructDef *parse_struct_type(StructDef *def_list, Token *tok) {
     m->offset = member_last_offset;
     expect(tok, TK_SEMICOLON);
   }
-  expect(tok, TK_SEMICOLON);
   new_struct_def->members = head.next;
   return new_struct_def;
 }
@@ -548,16 +559,16 @@ Node *block_stmt(Function *func, Token *tok) {
   Node *cur = &head;
   while (!consume(tok, TK_RIGHT_BRACE)) {
     cur = cur->next = new_node(ND_STMT);
-    Type *base_declaration_type = parse_base_type(&func->structdef_list, tok);
-    if (base_declaration_type) {
-      if (base_declaration_type->kind == TYPE_STRUCT) {
+    Type *lvar_declaration_type = parse_declaration_type(&func->structdef_list, tok);
+    if (lvar_declaration_type) {
+      // 構造体定義の場合
+      if (lvar_declaration_type->kind == TYPE_STRUCT && !lvar_declaration_type->ident) {
         cur->body = new_node(ND_STRUCTDEF);
-        cur->body->type = base_declaration_type;
+        cur->body->type = lvar_declaration_type;
         continue;
       }
-      Type *lvar_declaration_type = parse_nested_type(parse_pointer_type(base_declaration_type, tok), tok);
       // ローカル変数の宣言の場合
-      if (lvar_declaration_type) {
+      else {
         cur->body = declaration(func, lvar_declaration_type, tok);
         expect(tok, TK_SEMICOLON);
       }
@@ -647,9 +658,6 @@ Node *declaration(Function *func, Type *dec_type, Token *tok) {
         node = array_init(func, dec_type, tok, var_node(func, dec_type->ident));
       }
     }
-  }
-  else if (dec_type->kind == TYPE_STRUCT) {
-    return NULL;
   }
   // 通常の変数の場合
   else {
