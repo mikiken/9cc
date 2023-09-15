@@ -144,7 +144,7 @@ Node *add_type_to_node(Function *function, Node *node) {
     case ND_ADD:
     case ND_SUB:
     case ND_ASSIGN: {
-      // ND_ADD や ND_SUB でポインタ演算の際に ptr_to の型に合わせて offset を sizeof(ptr_to) 倍する処理は  で行う
+      // ND_ADD や ND_SUB でポインタ演算の際に ptr_to の型に合わせて offset を sizeof(ptr_to) 倍する処理は semantic_analysis() で行う
       // node自体の型は一旦 lhs の型に合わせておく
       Node *lhs = add_type_to_node(function, node->lhs);
       Node *rhs = add_type_to_node(function, node->rhs);
