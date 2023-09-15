@@ -282,7 +282,7 @@ Type *parse_outermost_type(Type *pointer_type, Token *tok) {
     }
   }
   // 構造体定義の場合
-  else if (pointer_type->kind == TYPE_STRUCT && consume(tok, TK_SEMICOLON)) {
+  else if (pointer_type->kind == TYPE_STRUCT && consume_nostep(tok, TK_SEMICOLON)) {
     return pointer_type;
   }
   // 関数の引数が (void)である場合
@@ -565,6 +565,7 @@ Node *block_stmt(Function *func, Token *tok) {
       if (lvar_declaration_type->kind == TYPE_STRUCT && !lvar_declaration_type->ident) {
         cur->body = new_node(ND_STRUCTDEF);
         cur->body->type = lvar_declaration_type;
+        expect(tok, TK_SEMICOLON);
         continue;
       }
       // ローカル変数の宣言の場合
