@@ -484,7 +484,7 @@ Function *new_func_definition(Type *func_type) {
 }
 
 // トップレベルに書かれた構造体定義を管理するリスト
-StructDef *structdef_list;
+StructDef structdef_list;
 
 StructDef *find_structdef(StructDef *def_list, Token *tok) {
   if (!def_list->next)
@@ -529,7 +529,7 @@ Function *program(Token *tok) {
   Function *cur_func = func_head;
 
   while (!is_eof(tok)) {
-    Type *declaration_type = parse_declaration_type(structdef_list, tok);
+    Type *declaration_type = parse_declaration_type(&structdef_list, tok);
 
     if (declaration_type->kind == TYPE_FUNC) {
       // 関数定義の場合
@@ -543,6 +543,9 @@ Function *program(Token *tok) {
         new_func_declaration(declaration_type);
       }
     }
+    // 構造体定義の場合
+    else if (declaration_type->kind == TYPE_STRUCT && !declaration_type->ident)
+      expect(tok, TK_SEMICOLON);
     // グローバル変数の場合
     else {
       new_global_var(declaration_type);

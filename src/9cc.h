@@ -227,6 +227,8 @@ FuncDeclaration func_declaration_tail;
 Obj *global_var_list; // グローバル変数のリスト
 Obj global_var_tail;
 
+extern StructDef structdef_list;
+
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 void unexpected_symbol_error(char *loc, TokenKind kind);

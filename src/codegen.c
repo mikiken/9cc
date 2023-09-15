@@ -154,6 +154,12 @@ int calc_gvar_size(Type *type) {
       return SIZE_PTR;
     case TYPE_ARRAY:
       return calc_gvar_size(type->ptr_to) * type->array_size;
+    case TYPE_STRUCT: {
+      int struct_size;
+      for (Member *m = type->struct_def->members->next; m; m = m->next)
+        struct_size = m->offset;
+      return struct_size;
+    }
     default:
       error("不正な型のグローバル変数のサイズを計算することはできません");
   }
