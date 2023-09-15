@@ -198,8 +198,11 @@ Type *parse_base_type(StructDef *def_list, Token *tok) {
     expect_nostep(tok, TK_IDENT);
     StructDef *structdef = find_structdef(def_list, tok);
     // 構造体定義の場合
-    if (!structdef)
+    if (!structdef) {
       structdef = parse_struct_type(def_list, tok);
+      structdef->next = def_list->next;
+      def_list->next = structdef;
+    }
     // 構造体変数の場合
     else {
       next_token(tok);
