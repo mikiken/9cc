@@ -35,6 +35,7 @@ typedef enum {
   TK_DECREMENT,         // --
   TK_SEMICOLON,         // ;
   TK_COMMA,             // ,
+  TK_DOT,               // .
   TK_AND,               // &
   TK_QUESTION,          // ?
   TK_COLON,             // :
