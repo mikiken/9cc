@@ -158,6 +158,7 @@ Node *new_lvar_definition(Function *func, Type *lvar_type) {
     func->lvar_list = lvar;
 
     node->offset = lvar->offset;
+    node->type = lvar_type;
   }
   return node;
 }
@@ -169,6 +170,7 @@ Node *var_node(Function *func, Token *var_name) {
   if (lvar != NULL) {
     node = new_node(ND_LVAR);
     node->offset = lvar->offset;
+    node->type = lvar->type;
   }
   // グローバル変数の場合
   else {
@@ -177,6 +179,7 @@ Node *var_node(Function *func, Token *var_name) {
       error_at(var_name->start, "未定義の変数です");
     node = new_node(ND_GVAR);
     node->gvar_name = calloc(var_name->len + 1, sizeof(char));
+    node->type = gvar->type;
     memcpy(node->gvar_name, var_name->start, var_name->len);
   }
   return node;
