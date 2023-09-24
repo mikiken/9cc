@@ -3,7 +3,7 @@
 *.s
 tmp*
 a.out
-target.c
+target*
 9cc
 .vscode/*
 .gdb_history
