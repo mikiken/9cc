@@ -252,7 +252,7 @@ void gen_addr(Node *node) {
       return;
     case ND_GVAR:
       printf("  lea rdi, [rip+%s]\n", node->gvar_name); // アドレスは8byte
-      push_addr(RDI);                                   //グローバル変数のアドレスをスタックにpush
+      push_addr(RDI);                                   // グローバル変数のアドレスをスタックにpush
       return;
     case ND_STR:
       printf("  lea rdi, [rip+.LC%d]\n", node->str_id);
