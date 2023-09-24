@@ -165,6 +165,7 @@ typedef enum {
   ND_DEREF,     // *(参照)
   ND_SIZEOF,    // sizeof 意味解析でND_NUMに置き換えられる
   ND_STRUCTDEF, // 構造体定義
+  ND_MEMBER,    // 直接メンバ参照演算子
 } NodeKind;
 
 typedef struct Node Node;
@@ -194,6 +195,8 @@ struct Node {
   char *gvar_name;
   // kind == ND_STR
   int str_id;
+  // struct member
+  Member *member;
 };
 
 typedef struct FuncDeclaration FuncDeclaration;

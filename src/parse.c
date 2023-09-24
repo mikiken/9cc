@@ -464,6 +464,14 @@ StructDef *parse_struct_type(StructDef *def_list, Token *tok) {
   return new_struct_def;
 }
 
+Member *find_member(Member *member_list, Token *member_ident) {
+  for (Member *m = member_list; m; m = m->next) {
+    if (!memcmp(m->type->ident->start, member_ident->start, member_ident->len))
+      return m;
+  }
+  return NULL;
+}
+
 void new_func_declaration(Type *func_type) {
   FuncDeclaration *func_dec = calloc(1, sizeof(FuncDeclaration));
   func_dec->ret_type = func_type->return_type;
@@ -903,17 +911,30 @@ Node *unary(Function *func, Token *tok) {
 
 Node *postfix(Function *func, Token *tok) {
   Node *node = primary(func, tok);
-  while (consume(tok, TK_LEFT_BRACKET)) {
-    node = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, node, expr(func, tok)), NULL);
-    expect(tok, TK_RIGHT_BRACKET);
-  }
   // (a += 1) - 1としてパース
   if (consume(tok, TK_INCREMENT))
-    node = new_binary_node(ND_SUB, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_ADD, node, new_num_node(1))), new_num_node(1));
+    return new_binary_node(ND_SUB, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_ADD, node, new_num_node(1))), new_num_node(1));
   // (a -= 1) + 1としてパース
   else if (consume(tok, TK_DECREMENT))
-    node = new_binary_node(ND_ADD, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_SUB, node, new_num_node(1))), new_num_node(1));
-  return node;
+    return new_binary_node(ND_ADD, new_binary_node(ND_ASSIGN, node, new_binary_node(ND_SUB, node, new_num_node(1))), new_num_node(1));
+
+  while (true) {
+    if (consume(tok, TK_LEFT_BRACKET)) {
+      node = new_binary_node(ND_DEREF, new_binary_node(ND_ADD, node, expr(func, tok)), NULL);
+      expect(tok, TK_RIGHT_BRACKET);
+      continue;
+    }
+    if (consume(tok, TK_DOT)) {
+      node = new_binary_node(ND_MEMBER, node, NULL);
+      Member *member = find_member(node->lhs->type->struct_def->members, tok);
+      if (!member)
+        error_at(tok->start, "構造体 '%s' に メンバ '%s' が定義されていません", node->type->struct_def->tag, tok->start);
+      node->member = member;
+      expect(tok, TK_IDENT);
+      continue;
+    }
+    return node;
+  }
 }
 
 Node *primary(Function *func, Token *tok) {

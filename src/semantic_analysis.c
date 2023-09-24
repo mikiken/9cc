@@ -261,6 +261,10 @@ Node *add_type_to_node(Function *function, Node *node) {
     }
     case ND_STRUCTDEF:
       return node; // 定義時に型情報が付与されているので、そのままnodeを返す
+    case ND_MEMBER:
+      node->lhs = add_type_to_node(function, node->lhs);
+      node->type = node->member->type;
+      return node;
     default:
       error("add_type_to_node() : nodeに型を付与することができませんでした");
   }
@@ -546,6 +550,15 @@ void semantic_analysis(Node *node) {
         error("semantic_analysis() : ポインタでないものを間接参照することはできません");
       // node自体の型はlhs->type->ptr_toに合わせる
       node->type = node->lhs->type->ptr_to;
+      return;
+    case ND_MEMBER:
+      semantic_analysis(node->lhs);
+      // 左辺が構造体型でなければエラーにする
+      if (node->lhs->type->kind != TYPE_STRUCT)
+        error_at(node->lhs->type->ident->start, "左辺が構造体型ではありません");
+      // メンバが配列の場合はポインタにキャストする
+      if (is_array_type_node(node))
+        node = cast_array_to_pointer(node);
       return;
     default:
       error("semantic_analysis() : 意味解析を行うことができませんでした");

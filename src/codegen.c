@@ -262,6 +262,11 @@ void gen_addr(Node *node) {
     case ND_DEREF:
       gen_expr(node->lhs);
       return;
+    case ND_MEMBER:
+      printf("  lea rdi, [rbp-%d]\n", node->lhs->offset);
+      printf("  sub rdi, %d\n", node->member->offset);
+      push_addr(RDI);
+      return;
     default:
       error("nodeのアドレスを生成することができません");
       return;
@@ -346,6 +351,7 @@ void gen_expr(Node *node) {
       return;
     case ND_LVAR:
     case ND_GVAR:
+    case ND_MEMBER:
       gen_addr(node);                               // 変数のアドレスをスタックにpush
       pop_addr(RDI);                                // rdiに変数のアドレスをセット
       mov_memory_to_register(node->type, RAX, RDI); // rdiの参照先の値をraxに代入する
