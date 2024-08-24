@@ -262,11 +262,16 @@ void gen_addr(Node *node) {
     case ND_DEREF:
       gen_expr(node->lhs);
       return;
-    case ND_MEMBER:
-      printf("  lea rdi, [rbp-%d]\n", node->lhs->offset);
-      printf("  sub rdi, %d\n", node->member->offset);
+    case ND_MEMBER: {
+      int struct_size = 0;
+      for (Member *m = node->member; m; m = m->next)
+        struct_size = m->offset;
+      // 構造体メンバのrbpからのoffset = 構造体変数のrbpからのoffset - 構造体変数のサイズ + 構造体内部でのメンバのoffset
+      int member_offset = node->lhs->offset - struct_size + node->member->offset;
+      printf("  lea rdi, [rbp-%d]\n", member_offset);
       push_addr(RDI);
       return;
+    }
     default:
       error("nodeのアドレスを生成することができません");
       return;

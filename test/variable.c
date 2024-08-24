@@ -107,15 +107,25 @@ int global_variable_test5() {
 int struct_test1() {
   struct position {
     int x;
+  };
+  struct position p;
+  p.x = 2;
+  return p.x;
+}
+
+int struct_test2() {
+  struct position {
+    int x;
     int y;
+    int z;
+    int *ptr;
   };
 
   struct position p;
+  int hoge = 7;
+  p.ptr = &hoge;
 
-  p.x = 2;
-  p.y = 3;
-
-  return p.x + p.y;
+  return *p.ptr;
 }
 
 void variable_test() {
@@ -141,7 +151,8 @@ void variable_test() {
   assert(80, sizeof(global_variable2), "sizeof(global_variable2)");
 
   // 構造体
-  assert(5, struct_test1(), "{struct position {int x; int y;}; struct position p; p.x = 2; p.y = 3; return p.x + p.y;}");
+  assert(2, struct_test1(), "{struct position {int x;}; struct position p; p.x = 2; return p.x;}");
+  assert(7, struct_test2(), "{struct position {int x; int y; int z; int *ptr;}; struct position p; int hoge = 7; p.ptr = &hoge; return *p.ptr;}");
 
   printf("\x1b[32m"); // 文字色を緑に設定
   printf("All variable test cases have passed.\n\n");
